@@ -241,7 +241,8 @@ function addBlock(exName, prefill=true, data=null){
   b.dataset.planned = exName||'';
   b.innerHTML = `
     <div class="block-head">
-      <select class="exsel">${exOptions(exName||db.exercises[0])}</select>
+      <button class="ghost expick"></button>
+      <select class="exsel" style="display:none">${exOptions(exName||db.exercises[0])}</select>
       <button class="rm" aria-label="Übung entfernen">✕</button>
     </div>
     <div class="swap-tag" style="display:none">Getauscht — nur diese Einheit</div>
@@ -252,6 +253,16 @@ function addBlock(exName, prefill=true, data=null){
   `;
   const sel = b.querySelector('.exsel');
   const setsEl = b.querySelector('.sets');
+  const pk = b.querySelector('.expick');
+  pk.textContent = sel.value;
+  pk.onclick = async ()=>{
+    const n = await pickExercise();
+    if(!n) return;
+    ensureEx(n);
+    sel.innerHTML = exOptions(n);
+    pk.textContent = n;
+    fill();
+  };
 
   function addSetRow(w='',r=''){
     const d = document.createElement('div');
@@ -335,7 +346,13 @@ function loadDay(){
 }
 
 $('#daySel').addEventListener('change', loadDay);
-$('#addBlock').onclick = ()=>addBlock(null,false);
+$('#addBlock').onclick = async ()=>{
+  const n = await pickExercise();
+  if(!n) return;
+  addBlock(n,false);
+  const blk = $('#blocks').lastElementChild;
+  if(blk) blk.dataset.planned='';
+};
 
 let editingSession = null;
 let editingDayName = null;
@@ -511,10 +528,7 @@ function renderPlan(){
         </div>
         <div class="day-edit" style="display:${isOpen?'block':'none'}">
           <div class="exHost"></div>
-          <div class="row" style="margin-top:8px">
-            <select class="pick" style="flex:2">${db.exercises.map(e=>`<option>${esc(e)}</option>`).join('')}<option value="__new__">＋ Neue Übung…</option></select>
-            <button class="ghost tiny" data-a="addEx" style="flex:0 0 auto">Hinzufügen</button>
-          </div>
+          <button class="ghost tiny" data-a="addEx" style="width:100%;margin-top:8px">＋ Übung hinzufügen</button>
           <div class="row" style="margin-top:10px">
             <button class="link" data-a="renD">Tag umbenennen</button>
             <button class="link warn" data-a="delD">Tag löschen</button>
@@ -535,14 +549,11 @@ function renderPlan(){
         exHost.appendChild(line);
       });
       de.querySelector('[data-a=addEx]').onclick = async()=>{
-        const pick = de.querySelector('.pick');
-        let name = pick.value;
-        if(name==='__new__'){
-          const n = prompt('Name der neuen Übung');
-          if(!n || !n.trim()) return;
-          name = n.trim(); ensureEx(name);
-        }
+        const name = await pickExercise();
+        if(!name) return;
+        ensureEx(name);
         if(!d.ex.includes(name)) d.ex.push(name);
+        openDay = d.id;
         await Store.save(db); renderAll();
       };
       de.querySelector('[data-a=renD]').onclick = async()=>{
