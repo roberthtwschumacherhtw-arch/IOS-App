@@ -883,13 +883,17 @@ function parseCSV(text){
   }).filter(r=>r.some(c=>c!==''));
   return {head:rows[0], body:rows.slice(1)};
 }
-function guess(head, words){
-  return head.findIndex(h=>words.some(w=>h.toLowerCase().includes(w)));
+function guess(head, words, exclude=[]){
+  return head.findIndex(h=>{
+    const l = h.toLowerCase();
+    return words.some(w=>l.includes(w)) && !exclude.some(w=>l.includes(w));
+  });
 }
 function parseDate(s){
   s = s.trim();
   let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return `${m[1]}-${m[2]}-${m[3]}`;
   m = s.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})/); if(m) return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+  m = s.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{2})(?!\d)/); if(m) return `20${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
   const d = new Date(s); return isNaN(d) ? null : iso(d);
 }
 $('#csvFile').onchange = async e=>{
@@ -897,12 +901,13 @@ $('#csvFile').onchange = async e=>{
   csv = parseCSV(await f.text());
   const opts = ['<option value="-1">— keine —</option>', ...csv.head.map((h,i)=>`<option value="${i}">${esc(h)||'Spalte '+(i+1)}</option>`)].join('');
   ['#mapDate','#mapW','#mapK','#mapP'].forEach(s=>$(s).innerHTML=opts);
-  $('#mapDate').value = guess(csv.head,['time','date','datum','zeit','messung']);
-  $('#mapW').value    = guess(csv.head,['weight','gewicht','kg','masse']);
-  $('#mapK').value    = guess(csv.head,['calorie','kcal','kalorien','energy']);
-  $('#mapP').value    = guess(csv.head,['protein','eiweiß','eiweiss']);
+  $('#mapDate').value = guess(csv.head,['time','date','datum','zeit','messung'],['zeitraum']);
+  $('#mapW').value    = guess(csv.head,['weight','gewicht','kg','masse'],['fettfrei','optimal','knochen','muskel','ziel','bmi']);
+  $('#mapK').value    = guess(csv.head,['calorie','kcal','kalorien','energy'],['grundumsatz','umsatz','bmr']);
+  $('#mapP').value    = guess(csv.head,['protein','eiweiß','eiweiss'],['%']);
   $('#csvMap').style.display='block';
-  $('#csvInfo').textContent = `${csv.body.length} Zeilen gelesen. Spalten prüfen und importieren.`;
+  const isRenpho = csv.head.join(' ').toLowerCase().includes('grundumsatz');
+  $('#csvInfo').textContent = `${csv.body.length} Zeilen gelesen.` + (isRenpho ? ' Renpho-Export erkannt — Datum und Gewicht sind vorausgewählt (Grundumsatz/Eiweiß % werden bewusst nicht als kcal/Protein importiert).' : ' Spalten prüfen und importieren.');
 };
 $('#csvGo').onclick = async ()=>{
   const di=+$('#mapDate').value, wi=+$('#mapW').value, ki=+$('#mapK').value, pi=+$('#mapP').value;
