@@ -792,15 +792,32 @@ function mapProd(p){
   const pr=num(n['proteins_100g']);
   return {code:p.code, name:(p.product_name||'Unbenannt').trim(), brand:(p.brands||'').split(',')[0].trim(), kc100:kc, pr100:pr!=null?pr:0, qty:(p.quantity||'').trim()};
 }
-async function offSearch(q){
+// OFF-Server liefern pro Anfrage zufällig mal keinen CORS-Header → "Failed to fetch".
+// Deshalb mehrfach wiederholen; ein neuer Versuch trifft meist einen funktionierenden Server.
+async function fetchJSONRetry(u, {signal, tries=6, delay=300}={}){
+  let last;
+  for(let i=0;i<tries;i++){
+    if(signal && signal.aborted) throw Object.assign(new Error('abort'),{name:'AbortError'});
+    try{
+      const r=await fetch(u,{signal});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return await r.json();
+    }catch(e){
+      if(e.name==='AbortError') throw e;
+      last=e;
+      await new Promise(res=>setTimeout(res, delay));
+    }
+  }
+  throw last||new Error('fetch fehlgeschlagen');
+}
+async function offSearch(q, signal){
   const u=OFF+'/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=30&fields=code,product_name,brands,nutriments,quantity';
-  const r=await fetch(u);
-  const d=await r.json();
+  const d=await fetchJSONRetry(u,{signal});
   return (d.products||[]).map(mapProd).filter(Boolean);
 }
 async function offBarcode(code){
   const u=OFF+'/api/v2/product/'+encodeURIComponent(code)+'.json?fields=code,product_name,brands,nutriments';
-  const r=await fetch(u); const d=await r.json();
+  const d=await fetchJSONRetry(u,{tries:4});
   if(d.status!==1 || !d.product) return null;
   return mapProd(d.product);
 }
@@ -818,7 +835,7 @@ async function addFoodMeal(text, kc, pr){
 
 const foodOv=document.createElement('div'); foodOv.className='pickov'; foodOv.style.display='none';
 foodOv.innerHTML=`<div class="picksheet">
-  <div class="foodhead"><input class="picksearch prodq" type="text" placeholder="Produkt suchen…"><button class="ghost tiny prodgo">Suchen</button></div>
+  <div class="foodhead"><input class="picksearch prodq" type="text" placeholder="Produkt tippen — Vorschläge erscheinen"><button class="ghost tiny prodgo">Suchen</button></div>
   <div class="picklist prodlist"></div>
   <div class="proddetail" style="display:none"></div>
   <button class="link foodclose" style="margin-top:6px;text-align:center;width:100%">Schließen</button>
@@ -829,23 +846,43 @@ foodOv.querySelector('.foodclose').onclick=closeFood;
 foodOv.addEventListener('click', e=>{ if(e.target===foodOv) closeFood(); });
 function openFood(){
   foodOv.querySelector('.prodq').value='';
-  foodOv.querySelector('.prodlist').innerHTML='<div class="empty">Suchbegriff eingeben und „Suchen"</div>';
+  foodOv.querySelector('.prodlist').innerHTML='<div class="empty">Mind. 2 Buchstaben eingeben…</div>';
   foodOv.querySelector('.prodlist').style.display='block';
   foodOv.querySelector('.proddetail').style.display='none';
   foodOv.querySelector('.foodhead').style.display='flex';
   foodOv.style.display='flex';
   setTimeout(()=>foodOv.querySelector('.prodq').focus(),60);
 }
-async function doProdSearch(){
-  const q=foodOv.querySelector('.prodq').value.trim(); if(!q) return;
-  const list=foodOv.querySelector('.prodlist'); list.innerHTML='<div class="empty">Suche…</div>';
-  let res=[]; try{ res=await offSearch(q); }catch(e){ list.innerHTML='<div class="empty">Fehler bei der Suche</div>'; return; }
+let searchTimer=null, searchAbort=null;
+function renderResults(res, list){
   if(!res.length){ list.innerHTML='<div class="empty">Nichts gefunden</div>'; return; }
   list.innerHTML=res.map((p,i)=>`<button class="pickitem prod" data-i="${i}"><div class="li-t">${esc(p.name)}</div><div class="li-s">${p.brand?esc(p.brand)+' · ':''}${Math.round(p.kc100)} kcal · ${round(p.pr100,1)} g P / 100 g${p.qty?' · '+esc(p.qty):''}</div></button>`).join('');
   list.querySelectorAll('.prod').forEach(b=>b.onclick=()=>showProdDetail(res[+b.dataset.i]));
 }
-foodOv.querySelector('.prodgo').onclick=doProdSearch;
-foodOv.querySelector('.prodq').addEventListener('keydown',e=>{ if(e.key==='Enter') doProdSearch(); });
+async function runSearch(q){
+  const list=foodOv.querySelector('.prodlist');
+  if(searchAbort) searchAbort.abort();
+  searchAbort=new AbortController();
+  list.innerHTML='<div class="empty">Suche…</div>';
+  try{
+    const res=await offSearch(q, searchAbort.signal);
+    if(foodOv.querySelector('.prodq').value.trim()!==q) return; // veraltet
+    renderResults(res, list);
+  }catch(e){
+    if(e.name==='AbortError') return;
+    list.innerHTML='<div class="empty">Keine Verbindung zur Datenbank ('+esc(e.message||'')+') — nochmal versuchen</div>';
+  }
+}
+function onQueryInput(){
+  const q=foodOv.querySelector('.prodq').value.trim();
+  clearTimeout(searchTimer);
+  const list=foodOv.querySelector('.prodlist');
+  if(q.length<2){ if(searchAbort) searchAbort.abort(); list.innerHTML='<div class="empty">Mind. 2 Buchstaben eingeben…</div>'; return; }
+  searchTimer=setTimeout(()=>runSearch(q), 350);
+}
+foodOv.querySelector('.prodq').addEventListener('input', onQueryInput);
+foodOv.querySelector('.prodgo').onclick=()=>{ const q=foodOv.querySelector('.prodq').value.trim(); if(q.length>=2) runSearch(q); };
+foodOv.querySelector('.prodq').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const q=e.target.value.trim(); if(q.length>=2) runSearch(q); } });
 function showProdDetail(p){
   const det=foodOv.querySelector('.proddetail');
   foodOv.querySelector('.prodlist').style.display='none';
@@ -898,23 +935,34 @@ async function handleCode(code){
 }
 async function openScan(){
   scanOv.querySelector('.scancode').value='';
-  scanOv.querySelector('.scaninfo').textContent='Kamera wird gestartet…';
-  scanOv.style.display='flex';
   const vid=scanOv.querySelector('.scanvid'), info=scanOv.querySelector('.scaninfo');
-  try{
-    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
-    vid.srcObject=scanStream; await vid.play(); scanActive=true;
-    info.textContent='Kamera auf den Barcode richten.';
-    if('BarcodeDetector' in window){
-      const det=new window.BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']});
+  info.textContent='Kamera wird gestartet…';
+  scanOv.style.display='flex';
+  scanActive=true;
+  // Weg 1: nativer BarcodeDetector (Android/Chrome)
+  if('BarcodeDetector' in window){
+    try{
+      scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+      vid.srcObject=scanStream; await vid.play();
+      info.textContent='Kamera auf den Barcode richten.';
+      const det=new window.BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf']});
       const loop=async()=>{ if(!scanActive) return; try{ const cs=await det.detect(vid); if(cs&&cs.length){ handleCode(cs[0].rawValue); return; } }catch(e){} scanRAF=requestAnimationFrame(loop); };
       loop();
-    } else {
-      const ZX=await loadZX();
-      scanZX=new ZX.BrowserMultiFormatReader();
-      scanZX.decodeFromVideoElement(vid,(result)=>{ if(result && scanActive){ scanActive=false; handleCode(result.getText()); } });
+    }catch(e){ info.textContent='Kamera nicht verfügbar — bitte Nummer eingeben.'; scanActive=false; }
+    return;
+  }
+  // Weg 2: ZXing steuert die Kamera selbst (iOS Safari)
+  try{
+    const ZX=await loadZX();
+    scanZX=new ZX.BrowserMultiFormatReader();
+    const cb=(result)=>{ if(result && scanActive){ scanActive=false; handleCode(result.getText()); } };
+    info.textContent='Kamera auf den Barcode richten.';
+    try{
+      await scanZX.decodeFromConstraints({video:{facingMode:{ideal:'environment'}}}, vid, cb);
+    }catch(e1){
+      await scanZX.decodeFromVideoDevice(undefined, vid, cb);
     }
-  }catch(e){ info.textContent='Kamera nicht verfügbar — bitte Nummer manuell eingeben.'; }
+  }catch(e){ info.textContent='Kamera nicht verfügbar — bitte Nummer eingeben.'; scanActive=false; }
 }
 const _psb=$('#prodSearchBtn'); if(_psb) _psb.onclick=openFood;
 const _bcb=$('#barcodeBtn'); if(_bcb) _bcb.onclick=openScan;
