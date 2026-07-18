@@ -1002,10 +1002,13 @@ function parseFoodDiary(lines){
     const t = csvSplit(raw);
     const first = (t[0]||'').trim();
     const low = first.toLowerCase();
-    if(_WD.includes(first)){
-      const dpart=(t[1]||'').trim(), year=(t[2]||'').trim();
-      const parts=dpart.split(/\s+/); const mn=_MON[(parts[0]||'').toLowerCase()]; const day=parseInt(parts[1],10);
-      if(mn && day && /^\d{4}$/.test(year)){
+    const firstWord = first.split(/[,\s]/)[0];
+    // Tageszeile: Datum entweder in einer Zelle ("Mittwoch, Juli 1, 2026") oder über 3 Spalten
+    if(_WD.includes(firstWord) && !_MEAL_LABELS[low]){
+      const dateStr = /\d{4}/.test(first) ? first : [t[0],t[1],t[2]].join(',');
+      const m = dateStr.match(/(januar|februar|märz|maerz|april|mai|juni|juli|august|september|oktober|november|dezember)\s+(\d{1,2})\s*,?\s*(\d{4})/i);
+      if(m){
+        const mn=_MON[m[1].toLowerCase()], day=parseInt(m[2],10), year=m[3];
         curDate=`${year}-${String(mn).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
         days[curDate]=days[curDate]||{meals:[]}; curMeal=null;
       } else { curDate=null; curMeal=null; }
