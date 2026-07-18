@@ -977,7 +977,11 @@ async function fileLines(f){
     const rows = XLSX.utils.sheet_to_json(ws, {header:1, blankrows:true});
     return rows.map(r=> (r && r.length) ? r.map(c=>c==null?'':String(c)).join(',') : '');
   }
-  return (await f.text()).split(/\r?\n/);
+  const buf = await f.arrayBuffer();
+  let text = new TextDecoder('utf-8').decode(buf);
+  if(text.indexOf('�')>=0){ try{ text = new TextDecoder('windows-1252').decode(buf); }catch(e){} }
+  if(text.charCodeAt(0)===0xFEFF) text = text.slice(1);
+  return text.split(/\r?\n/);
 }
 function csvSplit(line){
   const out=[]; let cur='', q=false;
@@ -989,10 +993,15 @@ function csvSplit(line){
   }
   out.push(cur); return out;
 }
-const _WD = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
-const _MON = {januar:1,februar:2,'märz':3,'maerz':3,april:4,mai:5,juni:6,juli:7,august:8,september:9,oktober:10,november:11,dezember:12};
-const _MEALS = [['frühstück','Frühstück'],['mittagessen','Mittagessen'],['abendessen','Abendessen'],['snack','Snack'],['sonstige','Snack']];
-const _MEAL_LABELS = {'frühstück':'Frühstück','mittagessen':'Mittagessen','abendessen':'Abendessen','snacks/sonstiges':'Snack','snacks':'Snack'};
+const _WD = ['montag','dienstag','mittwoch','donnerstag','freitag','samstag','sonntag',
+            'monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+const _MON = {januar:1,februar:2,'märz':3,'maerz':3,april:4,mai:5,juni:6,juli:7,august:8,september:9,oktober:10,november:11,dezember:12,
+              january:1,february:2,march:3,may:5,june:6,july:7,october:10,december:12};
+const _MON_RE = /(januar|februar|märz|maerz|april|mai|juni|juli|august|september|oktober|november|dezember|january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})\s*,?\s*(\d{4})/i;
+function _fold(s){ return s.toLowerCase().replace(/ä/g,'a').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ß/g,'ss').replace(/[^a-z]/g,''); }
+const _MEAL_EXACT = {fruhstuck:'Frühstück',breakfast:'Frühstück',mittagessen:'Mittagessen',lunch:'Mittagessen',abendessen:'Abendessen',dinner:'Abendessen',supper:'Abendessen',snacks:'Snack',snackssonstiges:'Snack',snack:'Snack',snackssonstige:'Snack'};
+function mealName(first){ return _MEAL_EXACT[_fold(first)] || null; }
+function leadSpaces(raw){ const m=raw.match(/^[ \t]*/); return m?m[0].length:0; }
 function parseFoodDiary(lines){
   let details=false, curDate=null, curMeal=null; const days={};
   for(const raw of lines){
@@ -1001,26 +1010,29 @@ function parseFoodDiary(lines){
     if(!raw.trim() || /^#/.test(raw.trim())) continue;
     const t = csvSplit(raw);
     const first = (t[0]||'').trim();
-    const low = first.toLowerCase();
-    const firstWord = first.split(/[,\s]/)[0];
-    // Tageszeile: Datum entweder in einer Zelle ("Mittwoch, Juli 1, 2026") oder über 3 Spalten
-    if(_WD.includes(firstWord) && !_MEAL_LABELS[low]){
+    const indent = leadSpaces(raw);
+    const firstWord = _fold(first.split(/[,\s]/)[0]);
+    const mname = mealName(first);
+    // Tageszeile: Wochentag am Anfang + Jahr (Datum in einer Zelle oder über 3 Spalten)
+    if(_WD.includes(firstWord) && !mname){
       const dateStr = /\d{4}/.test(first) ? first : [t[0],t[1],t[2]].join(',');
-      const m = dateStr.match(/(januar|februar|märz|maerz|april|mai|juni|juli|august|september|oktober|november|dezember)\s+(\d{1,2})\s*,?\s*(\d{4})/i);
+      const m = dateStr.match(_MON_RE);
       if(m){
         const mn=_MON[m[1].toLowerCase()], day=parseInt(m[2],10), year=m[3];
-        curDate=`${year}-${String(mn).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-        days[curDate]=days[curDate]||{meals:[]}; curMeal=null;
+        if(mn){ curDate=`${year}-${String(mn).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+          days[curDate]=days[curDate]||{meals:[]}; curMeal=null; }
+        else { curDate=null; curMeal=null; }
       } else { curDate=null; curMeal=null; }
       continue;
     }
     if(!curDate) continue;
-    if(_MEAL_LABELS[low]){
-      curMeal={name:_MEAL_LABELS[low], kcal:num(t[1])||0, protein:num(t[7])||0, items:[]};
+    // Mahlzeit: erkannter Name ODER genau 1 Ebene eingerückt (Einrückung sprach-/kodierungsunabhängig)
+    if(mname || (indent===1 && t.length>1)){
+      curMeal={name:mname||first, kcal:num(t[1])||0, protein:num(t[7])||0, items:[]};
       days[curDate].meals.push(curMeal);
       continue;
     }
-    // Lebensmittel-Zeile (mehrere Spalten) → als Item merken; Mengenzeile (1 Spalte) überspringen
+    // Lebensmittel-Zeile (mehrere Spalten) → als Item; Mengenzeile (1 Spalte) überspringen
     if(curMeal && t.length>1 && first) curMeal.items.push(first);
   }
   return days;
