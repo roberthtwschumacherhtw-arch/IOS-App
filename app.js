@@ -74,8 +74,24 @@ const Store = {
 
 const DEFAULT_EX = ['Bankdrücken','Schrägbankdrücken KH','Kniebeuge','Kreuzheben','Rudern vorgebeugt','Latzug','Schulterdrücken KH','Beinpresse','Bizepscurls KH','Trizepsdrücken Kabel'];
 const DEFAULT_MEALS = ['Frühstück','Mittagessen','Abendessen','Snack'];
-const DEFAULT_GOALS = {sessions:3, setsPerMuscle:10};
-let db = {exercises:[...DEFAULT_EX], workouts:[], body:[], splits:[], exGroups:{}, n8nUrl:'', mealTypes:[...DEFAULT_MEALS], goals:{...DEFAULT_GOALS}};
+const DEFAULT_GOALS = {sessions:3, setsPerMuscle:10, kcalTarget:2200, proteinTarget:150};
+
+/* Phasen-Modell: Nutzer wählt Phase + Intensität in der App.
+   delta = kcal/Tag ggü. dem geschätzten Erhaltungsbedarf. */
+const CUT_LEVELS = [
+  {id:'sanft',     delta:-300, label:'Sanft',     prog:'~0,27 kg/Woche', fx:'kaum Muskelverlust, Training bleibt stark, gut durchzuhalten. Langsam.'},
+  {id:'moderat',   delta:-450, label:'Moderat',   prog:'~0,41 kg/Woche', fx:'geringes Muskelverlust-Risiko bei genug Protein, leichter Hunger.'},
+  {id:'zuegig',    delta:-650, label:'Zügig',     prog:'~0,59 kg/Woche', fx:'spürbarer Hunger, Leistung kann sinken, mehr Muskelverlust-Risiko.'},
+  {id:'aggressiv', delta:-800, label:'Aggressiv', prog:'~0,73 kg/Woche', fx:'hoher Hunger, deutliches Muskel-/Leistungsrisiko. Nur kurzfristig.'},
+];
+const BULK_LEVELS = [
+  {id:'lean',      delta:200,  label:'Lean',      prog:'~0,18 kg/Woche', fx:'minimaler Fettaufbau, recomp-nah. Langsamer Aufbau.'},
+  {id:'standard',  delta:300,  label:'Standard',  prog:'~0,27 kg/Woche', fx:'solider Aufbau bei vertretbarem Fettanteil.'},
+  {id:'aggressiv', delta:450,  label:'Aggressiv', prog:'~0,41 kg/Woche', fx:'schneller Aufbau, mehr Fett, längerer Cut danach nötig.'},
+];
+const DEFAULT_NUTRITION = { phase:'maintain', cutLevel:'moderat', bulkLevel:'standard', mode:'auto', manualKcal:null };
+
+let db = {exercises:[...DEFAULT_EX], workouts:[], body:[], splits:[], exGroups:{}, n8nUrl:'', mealTypes:[...DEFAULT_MEALS], goals:{...DEFAULT_GOALS}, foodFav:[], nutrition:{...DEFAULT_NUTRITION}};
 
 /* ---------------- Helfer ---------------- */
 const $ = s => root.querySelector(s);
@@ -111,6 +127,35 @@ function linSlope(pts){
   let nu=0, de=0;
   for(const p of pts){ nu += (p.x-mx)*(p.y-my); de += (p.x-mx)**2; }
   return de===0 ? null : nu/de;
+}
+
+/* ---------------- Ernährung: Phase → Kalorienziel ---------------- */
+// Geschätzter Erhaltungsbedarf aus Gewichtstrend + Ø-kcal (7700 kcal ≈ 1 kg).
+// Gibt null zurück, wenn zu wenig Daten (kein Fantasiewert).
+function estimateMaintenance(){
+  const b = bodySorted();
+  const recent = b.filter(x=>x.weight!=null);
+  const slope = linSlope(recent.map(x=>({x:new Date(x.date+'T12:00:00').getTime()/864e5, y:x.weight})));
+  const perWk = slope!=null ? slope*7 : null;
+  const kc = b.map(x=>x.kcal).filter(v=>v!=null);
+  const kcAvg = kc.length ? kc.reduce((a,c)=>a+c,0)/kc.length : null;
+  const bal = perWk!=null ? perWk*7700/7 : null;
+  return (bal!=null && kcAvg!=null) ? kcAvg - bal : null;
+}
+// Aktuelles Phasen-Delta (kcal/Tag) je nach gewählter Phase + Intensität.
+function phaseDelta(){
+  const n = db.nutrition || DEFAULT_NUTRITION;
+  if(n.phase==='cut')  return (CUT_LEVELS.find(l=>l.id===n.cutLevel)   || CUT_LEVELS[1]).delta;
+  if(n.phase==='bulk') return (BULK_LEVELS.find(l=>l.id===n.bulkLevel) || BULK_LEVELS[1]).delta;
+  return 0; // maintain / recomp
+}
+// Das eine Kalorienziel, das die ganze App abfragt (Header, Dashboard, Ziele).
+function calorieTarget(){
+  const n = db.nutrition || DEFAULT_NUTRITION;
+  if(n.mode==='manual') return { kcal: n.manualKcal!=null ? n.manualKcal : (db.goals.kcalTarget||null), source:'manual' };
+  const maint = estimateMaintenance();
+  if(maint==null) return { kcal:null, source:'auto', reason:'zu wenig Daten (Gewicht + kcal über ~2 Wochen loggen)' };
+  return { kcal: Math.round(maint + phaseDelta()), source:'auto', phase:n.phase, maint:Math.round(maint) };
 }
 const MUSCLE_RULES = [
   ['Bauch', ['bauch','crunch','plank','situp','sit-up','abs','core','rumpf','beinheben','russian twist','klappmesser']],
@@ -734,7 +779,7 @@ function renderMeals(){
   $('#mealList').innerHTML = meals.length ? meals.map(m=>`<li>
     <div class="li-main"><div class="li-t">${esc(m.name||'Mahlzeit')}</div>
     <div class="li-s">${m.text?esc(m.text)+' — ':''}${Math.round(m.kcal||0)} kcal · ${Math.round(m.protein||0)} g P</div></div>
-    <div class="li-d"><button class="link warn" data-mdel="${m.id}">löschen</button></div></li>`).join('')
+    <div class="li-d">${m.k100!=null?`<button class="link" data-medit="${m.id}">Menge</button><br>`:''}<button class="link warn" data-mdel="${m.id}">löschen</button></div></li>`).join('')
     + `<li><div class="li-main"><div class="li-t">Summe ${fmtDate(d)}</div></div><div class="li-d" style="font-size:12px">${Math.round(sum.k)} kcal · ${Math.round(sum.p)} g P</div></li>` : '';
   $$('#mealList [data-mdel]').forEach(b=>b.onclick=async()=>{
     const m = meals.find(x=>x.id===b.dataset.mdel);
@@ -744,8 +789,22 @@ function renderMeals(){
     e.meals = e.meals.filter(x=>x.id!==m.id);
     await Store.save(db); renderAll(); toast('Mahlzeit entfernt');
   });
+  $$('#mealList [data-medit]').forEach(b=>b.onclick=async()=>{
+    const m = meals.find(x=>x.id===b.dataset.medit);
+    if(!m) return;
+    const inp = prompt('Neue Menge (g / ml)', m.g||'');
+    if(inp===null) return;
+    const g = num(inp); if(g==null || g<0) return;
+    const nk = Math.round((m.k100||0)*g/100), np = Math.round((m.p100||0)*g/100);
+    e.kcal = Math.max(0, Math.round((e.kcal||0) - (m.kcal||0) + nk));
+    e.protein = Math.max(0, Math.round((e.protein||0) - (m.protein||0) + np));
+    m.kcal = nk; m.protein = np; m.g = g;
+    if(m.pname) m.text = `${m.pname} — ${g} g`;
+    else if(m.text) m.text = m.text.replace(/—\s*[\d.,]+\s*g/, '— '+g+' g');
+    await Store.save(db); renderAll(); toast('Menge geändert');
+  });
 }
-$('#bdate').addEventListener('change', renderMeals);
+$('#bdate').addEventListener('change', ()=>{ renderMeals(); renderNutri(); });
 $('#foodGo').onclick = async ()=>{
   const date = $('#bdate').value||TODAY;
   const text = $('#foodTxt').value.trim();
@@ -790,7 +849,7 @@ function mapProd(p){
   const kc=num(n['energy-kcal_100g']);
   if(kc==null) return null;
   const pr=num(n['proteins_100g']);
-  return {code:p.code, name:(p.product_name||'Unbenannt').trim(), brand:(p.brands||'').split(',')[0].trim(), kc100:kc, pr100:pr!=null?pr:0, qty:(p.quantity||'').trim()};
+  return {code:p.code, name:(p.product_name||'Unbenannt').trim(), brand:(p.brands||'').split(',')[0].trim(), kc100:kc, pr100:pr!=null?pr:0, qty:(p.quantity||'').trim(), serving:num(p.serving_quantity)||0};
 }
 // OFF-Server liefern pro Anfrage zufällig mal keinen CORS-Header → "Failed to fetch".
 // Deshalb mehrfach wiederholen; ein neuer Versuch trifft meist einen funktionierenden Server.
@@ -811,26 +870,40 @@ async function fetchJSONRetry(u, {signal, tries=6, delay=300}={}){
   throw last||new Error('fetch fehlgeschlagen');
 }
 async function offSearch(q, signal){
-  const u=OFF+'/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=30&fields=code,product_name,brands,nutriments,quantity';
+  const u=OFF+'/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=30&fields=code,product_name,brands,nutriments,quantity,serving_quantity';
   const d=await fetchJSONRetry(u,{signal});
   return (d.products||[]).map(mapProd).filter(Boolean);
 }
 async function offBarcode(code){
-  const u=OFF+'/api/v2/product/'+encodeURIComponent(code)+'.json?fields=code,product_name,brands,nutriments';
+  const u=OFF+'/api/v2/product/'+encodeURIComponent(code)+'.json?fields=code,product_name,brands,nutriments,quantity,serving_quantity';
   const d=await fetchJSONRetry(u,{tries:4});
   if(d.status!==1 || !d.product) return null;
   return mapProd(d.product);
 }
 
-async function addFoodMeal(text, kc, pr){
+async function addFoodMeal(text, kc, pr, meta){
   const date=$('#bdate').value||TODAY;
   let e=db.body.find(x=>x.date===date); if(!e){ e={date}; db.body.push(e); }
   e.meals=e.meals||[];
   e.kcal=Math.round((e.kcal||0)+(kc||0));
   if(pr!=null) e.protein=Math.round((e.protein||0)+pr);
-  e.meals.push({id:uid(), name:curMeal, text, kcal:Math.round(kc||0), protein:Math.round(pr||0)});
+  const m={id:uid(), name:curMeal, text, kcal:Math.round(kc||0), protein:Math.round(pr||0)};
+  if(meta){ m.k100=meta.k100; m.p100=meta.p100; m.g=meta.g; m.pname=meta.pname; }
+  e.meals.push(m);
   await Store.save(db); renderAll();
   toast(`${curMeal}: ${Math.round(kc||0)} kcal · ${Math.round(pr||0)} g P`);
+}
+function pushFav(p){
+  db.foodFav=(db.foodFav||[]).filter(f=>!(f.name===p.name && f.brand===p.brand));
+  db.foodFav.unshift({code:p.code,name:p.name,brand:p.brand,kc100:p.kc100,pr100:p.pr100,qty:p.qty||'',serving:p.serving||0});
+  db.foodFav=db.foodFav.slice(0,24);
+}
+function showFavs(){
+  const list=foodOv.querySelector('.prodlist');
+  const favs=db.foodFav||[];
+  if(!favs.length){ list.innerHTML='<div class="empty">Tippe mind. 2 Buchstaben — oder scanne einen Barcode</div>'; return; }
+  list.innerHTML='<div class="pickgrp">Zuletzt genutzt</div>'+favs.map((p,i)=>`<button class="pickitem prod" data-f="${i}"><div class="li-t">${esc(p.name)}</div><div class="li-s">${p.brand?esc(p.brand)+' · ':''}${Math.round(p.kc100)} kcal · ${round(p.pr100,1)} g P / 100 g</div></button>`).join('');
+  list.querySelectorAll('.prod').forEach(b=>b.onclick=()=>showProdDetail(favs[+b.dataset.f]));
 }
 
 const foodOv=document.createElement('div'); foodOv.className='pickov'; foodOv.style.display='none';
@@ -846,11 +919,11 @@ foodOv.querySelector('.foodclose').onclick=closeFood;
 foodOv.addEventListener('click', e=>{ if(e.target===foodOv) closeFood(); });
 function openFood(){
   foodOv.querySelector('.prodq').value='';
-  foodOv.querySelector('.prodlist').innerHTML='<div class="empty">Mind. 2 Buchstaben eingeben…</div>';
   foodOv.querySelector('.prodlist').style.display='block';
   foodOv.querySelector('.proddetail').style.display='none';
   foodOv.querySelector('.foodhead').style.display='flex';
   foodOv.style.display='flex';
+  showFavs();
   setTimeout(()=>foodOv.querySelector('.prodq').focus(),60);
 }
 let searchTimer=null, searchAbort=null;
@@ -877,7 +950,7 @@ function onQueryInput(){
   const q=foodOv.querySelector('.prodq').value.trim();
   clearTimeout(searchTimer);
   const list=foodOv.querySelector('.prodlist');
-  if(q.length<2){ if(searchAbort) searchAbort.abort(); list.innerHTML='<div class="empty">Mind. 2 Buchstaben eingeben…</div>'; return; }
+  if(q.length<2){ if(searchAbort) searchAbort.abort(); showFavs(); return; }
   searchTimer=setTimeout(()=>runSearch(q), 350);
 }
 foodOv.querySelector('.prodq').addEventListener('input', onQueryInput);
@@ -888,19 +961,24 @@ function showProdDetail(p){
   foodOv.querySelector('.prodlist').style.display='none';
   foodOv.querySelector('.foodhead').style.display='none';
   det.style.display='block';
+  const presets=[];
+  if(p.serving>0) presets.push([Math.round(p.serving),'1 Portion ('+Math.round(p.serving)+' g)']);
+  [50,100,150,200].forEach(g=>presets.push([g, g+' g']));
   det.innerHTML=`
     <button class="link prodback">← zurück</button>
     <div class="li-t" style="font-size:16px;margin:6px 0 2px">${esc(p.name)}</div>
     <div class="li-s">${p.brand?esc(p.brand)+' · ':''}${Math.round(p.kc100)} kcal · ${round(p.pr100,1)} g Protein / 100 g</div>
     <label class="f" style="margin-top:16px">Menge (g / ml)</label>
-    <input type="number" class="prodg" inputmode="numeric" value="100">
+    <input type="number" class="prodg" inputmode="numeric" value="${p.serving>0?Math.round(p.serving):100}">
+    <div class="pickchips prodport" style="margin-top:8px">${presets.map(([g,l])=>`<button class="chip" data-g="${g}">${l}</button>`).join('')}</div>
     <div class="prodcalc" style="margin:14px 0"></div>
     <button class="prodadd" style="width:100%">Zu ${esc(curMeal)} hinzufügen</button>`;
   const g=det.querySelector('.prodg'), calc=det.querySelector('.prodcalc');
   function upd(){ const grams=num(g.value)||0; const kc=p.kc100*grams/100, pr=p.pr100*grams/100; calc.innerHTML=`<b>${Math.round(kc)} kcal</b> · ${round(pr,1)} g Protein`; return {kc,pr,grams}; }
   g.oninput=upd; upd();
+  det.querySelectorAll('.prodport .chip').forEach(b=>b.onclick=()=>{ g.value=b.dataset.g; upd(); });
   det.querySelector('.prodback').onclick=()=>{ det.style.display='none'; foodOv.querySelector('.prodlist').style.display='block'; foodOv.querySelector('.foodhead').style.display='flex'; };
-  det.querySelector('.prodadd').onclick=async()=>{ const {kc,pr,grams}=upd(); const text=`${p.name}${p.brand?' ('+p.brand+')':''} — ${Math.round(grams)} g`; await addFoodMeal(text, kc, pr); closeFood(); };
+  det.querySelector('.prodadd').onclick=async()=>{ const {kc,pr,grams}=upd(); const text=`${p.name}${p.brand?' ('+p.brand+')':''} — ${Math.round(grams)} g`; pushFav(p); await addFoodMeal(text, kc, pr, {k100:p.kc100, p100:p.pr100, g:Math.round(grams), pname:p.name+(p.brand?' ('+p.brand+')':'')}); closeFood(); };
 }
 
 /* ---- Barcode-Scanner ---- */
@@ -1348,7 +1426,7 @@ $('#impJson').onchange = async e=>{
   try{
     const d = JSON.parse(await f.text());
     if(!d.workouts||!d.body) throw 0;
-    db = {exercises:d.exercises?.length?d.exercises:[...DEFAULT_EX], workouts:d.workouts, body:d.body, splits:d.splits||[], exGroups:d.exGroups||{}, n8nUrl:d.n8nUrl||db.n8nUrl||'', mealTypes:d.mealTypes?.length?d.mealTypes:[...DEFAULT_MEALS], goals:{...DEFAULT_GOALS, ...(d.goals||{})}};
+    db = {exercises:d.exercises?.length?d.exercises:[...DEFAULT_EX], workouts:d.workouts, body:d.body, splits:d.splits||[], exGroups:d.exGroups||{}, n8nUrl:d.n8nUrl||db.n8nUrl||'', mealTypes:d.mealTypes?.length?d.mealTypes:[...DEFAULT_MEALS], goals:{...DEFAULT_GOALS, ...(d.goals||{})}, foodFav:d.foodFav||[], nutrition:{...DEFAULT_NUTRITION, ...(d.nutrition||{})}};
     await Store.save(db); renderAll(); toast('Backup eingespielt');
   }catch(err){ toast('Datei nicht lesbar'); }
 };
@@ -1477,7 +1555,58 @@ function renderAll(){
   fillDaySel();
   fillAnEx();
   renderWList(); renderPlan(); renderBody(); renderAnalysis(); renderExList(); renderCal();
-  renderMealChips(); renderMeals();
+  renderMealChips(); renderMeals(); renderNutri();
+}
+
+/* ---------------- PWA & Tagesziele ---------------- */
+const ICON180='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAABx0lEQVR42u3dywnCUBCG0ZuLZYglWIB7wYKyEcxOsCXBvYVYiQ2ILzD8MuesAzKTj2BQuMN6Ghs80q0AcSAOxIE4EAfiQByIA3EgDhAH4kAciANxIA7EgTgQB+IAcSAOxIE4EAfiQByIA3EgDhAH4kAciANxIA7EgTgQB+JAHCAOxIE4EAfiQByIA3EgDsQB4kAciANxIA7EgTgQB+JAHNAWM3/e7Xx5fsFqt618P6L206Mmf/OasmXMvJ8eNXnlPgL309Mmr9lH5n564OTV+ojdj7cVxIE4EAfiQByIA3EgDsSBOEAciIP2f/8E+8h1f6xwD5apvz97ciAOxIE4EAfiQByIA3EgDsQB4kAciANxIA7EgTho/ib4O5vTwR3y5EAciANxIA7EAeJAHIgDcSAOxIE4EMcr3508Vec8r9j99Mz5q530lrmfHjh/zTMAA/fT0+avfDpk2n6G9TT65oW3FcSBOBAH4kAciANxIA7EAeJAHIgDcSAOxIE4EAfiQBwgDsSBOBAH4kAciANxIA7EgThAHIgDcSAOxIE4EAfiQByIA8SBOBAH4kAciANxIA7EgThAHIgDcSAOxIE4EAfiQByIg+ruMY0+Opirr/oAAAAASUVORK5CYII=';
+const ICON512='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAAGX0lEQVR42u3aQanjQBSG0RmjMoxKUAHOBSpIicGTGdzSgHIXokqcOjTYaCTfcwrYfQz359NjNw9lTgDEc/IEAAIAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAgAAAIAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAIAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAgAAAIAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAIAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAgAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAgAAAIAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAgAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAgAAAIAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAgAAAIAgAAAIAAACAAAm+k8wZfWuvzqj+qn0XtiMiazmTyU2Ss0v2NnjcmYjABEv2M3jcmYjACEvmM3jcmYTPKPwMFPudVfCiYjAOziqhw0JmMyApDC3pODxmRMRgDiXpKDxmRMRgAAEIBgHxG+aDAZkxEAAAQg2OeDLxpMxmQEAAABCPbh4IsGl2kyAgCAAAAgAAAIAAACAIAAACAAAAIAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAgAAAIAgAAAIAAACAAAAgCAAAAgAAAIAAACAIAAACAAAAIAgAAAIAAACAAAAgCAAAAgAAAcT+cJjuh5vXsE9uZcF4/gNwAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAAEAIA2Ok9wRJfHzSMAfgMAQAAAEAAABAAAAQBAAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAABAEAAABAAAAQAAAEAQAAAEIB/00+jHwxMRgAAEAAABMCvtH4kMBkBAEAAfNH4lsFk/DACgFMGkxEAZwQmgwA4aIvCZExGABy0U8ZkTKaVPJTZK3xurYs7BpMRADftlMFkBMBNu2MwGQFw044YTEYAAEj+FxAAAgCAAAAgAAAIAAACAIAAACAAAAgAAAIAgAAAIAAACAAAAgAgAJ4AQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEAQAAAEAAABAAAAQBAAAAQAAAEAAABAEAAABAAAAQAAAEA4N0LdM2T+BRJFGcAAAAASUVORK5CYII=';
+function setupPWA(){
+  const head=document.head;
+  const has=sel=>head.querySelector(sel);
+  const meta=(n,c)=>{ if(!has('meta[name="'+n+'"]')){ const m=document.createElement('meta'); m.name=n; m.content=c; head.appendChild(m); } };
+  const link=(rel,href)=>{ const l=document.createElement('link'); l.rel=rel; l.href=href; head.appendChild(l); };
+  meta('theme-color','#2E7D74');
+  meta('apple-mobile-web-app-capable','yes');
+  meta('apple-mobile-web-app-status-bar-style','black-translucent');
+  meta('apple-mobile-web-app-title','Logbuch');
+  if(!has('link[rel="apple-touch-icon"]')) link('apple-touch-icon', ICON180);
+  if(!has('link[rel="icon"][href^="data:image/png"]')) link('icon', ICON512);
+  try{
+    const manifest={name:'Logbuch',short_name:'Logbuch',start_url:'.',scope:'.',display:'standalone',background_color:'#10151A',theme_color:'#2E7D74',icons:[{src:ICON512,sizes:'512x512',type:'image/png',purpose:'any maskable'},{src:ICON180,sizes:'180x180',type:'image/png'}]};
+    link('manifest', URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'})));
+  }catch(e){}
+  try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+  try{ if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{}); }catch(e){}
+  if(!$('#nutriCard')){
+    const c=document.createElement('div'); c.className='card'; c.id='nutriCard';
+    c.innerHTML='<h2 style="display:flex;justify-content:space-between;align-items:center">Tagesziel <button class="link" id="nutriEdit">anpassen</button></h2><div id="nutriBars"></div>';
+    const body=$('#v-body'); body.insertBefore(c, body.firstChild);
+    $('#nutriEdit').onclick=async()=>{
+      const k=prompt('Tagesziel Kalorien (kcal)', db.goals.kcalTarget||'');
+      if(k===null) return;
+      const p=prompt('Tagesziel Protein (g)', db.goals.proteinTarget||'');
+      if(p===null) return;
+      const kn=parseInt(k,10), pn=parseInt(p,10);
+      if(isFinite(kn)&&kn>=0) db.goals.kcalTarget=kn;
+      if(isFinite(pn)&&pn>=0) db.goals.proteinTarget=pn;
+      await Store.save(db); renderNutri(); toast('Tagesziel gespeichert');
+    };
+  }
+}
+function renderNutri(){
+  const host=$('#nutriBars'); if(!host) return;
+  const d=$('#bdate').value||TODAY;
+  const e=db.body.find(x=>x.date===d)||{};
+  const kc=Math.round(e.kcal||0), pr=Math.round(e.protein||0);
+  const kt=db.goals.kcalTarget||0, pt=db.goals.proteinTarget||0;
+  const bar=(label,cur,target,unit)=>{
+    const pct=target>0?Math.min(100,Math.round(cur/target*100)):0;
+    const over=target>0&&cur>target;
+    const rest=target>0?Math.max(0,target-cur):0;
+    return '<div class="goal"><div class="goal-top"><div class="goal-t">'+label+'</div><div class="goal-v"><b>'+cur+'</b> / '+(target||'—')+' '+unit+'</div></div><div class="goal-bar"><i style="width:'+pct+'%;background:'+(over?'var(--signal)':'var(--accent)')+'"></i></div><div class="goal-sub">'+(target>0?(over?'+'+(cur-target)+' '+unit+' über Ziel':rest+' '+unit+' übrig'):'kein Ziel gesetzt')+'</div></div>';
+  };
+  host.innerHTML='<div class="goal-sub" style="margin:-2px 0 12px">'+fmtDate(d)+'</div>'+bar('Kalorien',kc,kt,'kcal')+bar('Protein',pr,pt,'g');
 }
 
 /* ---------------- Start ---------------- */
@@ -1491,8 +1620,11 @@ function renderAll(){
     exGroups: saved.exGroups||{},
     n8nUrl: saved.n8nUrl||'',
     mealTypes: saved.mealTypes?.length ? saved.mealTypes : [...DEFAULT_MEALS],
-    goals: {...DEFAULT_GOALS, ...(saved.goals||{})}
+    goals: {...DEFAULT_GOALS, ...(saved.goals||{})},
+    foodFav: saved.foodFav||[],
+    nutrition: {...DEFAULT_NUTRITION, ...(saved.nutrition||{})}
   };
+  setupPWA();
   $('#n8nUrl').value = db.n8nUrl||'';
   $('#today').textContent = new Date().toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
   $('#wdate').value = TODAY; $('#bdate').value = TODAY;
