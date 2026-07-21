@@ -77,6 +77,21 @@ nav button{min-height:46px}
 .daytotals > div{background:var(--card);padding:9px 4px;text-align:center}
 .daytotals span{display:block;font:600 9.5px/1 var(--sans);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-60);margin-bottom:6px}
 .daytotals b{font-family:var(--mono);font-size:16px;font-weight:500;font-variant-numeric:tabular-nums;color:var(--ink)}
+.mealgrp{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.mealgrp:first-child{border-top:0;margin-top:2px;padding-top:0}
+.mealgrp-total{border-top-width:2px}
+.mealgrp-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.mealgrp-t{font-weight:650;font-size:15px}
+.mealgrp-k{font-family:var(--mono);font-size:13px;color:var(--ink);font-weight:500;flex:none}
+.mealgrp-sub{font-family:var(--mono);font-size:11.5px;color:var(--ink-60);margin-top:3px}
+.mi{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--grid);padding:9px 0}
+.mi-main{min-width:0;flex:1}
+.mi-t{font-weight:600;font-size:14px}
+.mi-amt{color:var(--teal);font-family:var(--mono);font-size:12px;margin-top:2px}
+.mi-macros{font-family:var(--mono);font-size:11.5px;color:var(--ink-30);margin-top:3px}
+.mi-side{flex:none;text-align:right}
+.mi-k{font-family:var(--mono);font-size:14px;font-weight:500}
+.mi-side .link{display:block;margin-top:2px;padding:2px 0}
 `;
 class LogbuchApp extends HTMLElement{
   connectedCallback(){
@@ -822,11 +837,40 @@ function renderMeals(){
   const e = db.body.find(x=>x.date===d);
   const meals = (e&&e.meals)||[];
   const sum = meals.reduce((a,m)=>({k:a.k+(m.kcal||0), p:a.p+(m.protein||0), f:a.f+(m.fat||0), c:a.c+(m.carbs||0)}), {k:0,p:0,f:0,c:0});
-  $('#mealList').innerHTML = meals.length ? meals.map(m=>`<li>
-    <div class="li-main"><div class="li-t">${esc(m.name||'Mahlzeit')}</div>
-    <div class="li-s">${m.text?esc(m.text)+' — ':''}${Math.round(m.kcal||0)} kcal · ${Math.round(m.protein||0)} g P${m.fat!=null?' · '+Math.round(m.fat)+' g F':''}${m.carbs!=null?' · '+Math.round(m.carbs)+' g KH':''}</div></div>
-    <div class="li-d">${m.k100!=null?`<button class="link" data-medit="${m.id}">Menge</button><br>`:''}<button class="link warn" data-mdel="${m.id}">löschen</button></div></li>`).join('')
-    + `<li><div class="li-main"><div class="li-t">Summe ${fmtDate(d)}</div></div><div class="li-d" style="font-size:12px">${Math.round(sum.k)} kcal · ${Math.round(sum.p)} g P · ${Math.round(sum.f)} g F · ${Math.round(sum.c)} g KH</div></li>` : '';
+  const kt = (calorieTarget().kcal)||null;
+  const macroStr=(f,c,p,pct)=>{
+    const seg=[];
+    seg.push('<span style="color:var(--ochre)">'+(f!=null?Math.round(f):'–')+'</span> F');
+    seg.push('<span style="color:var(--accent)">'+(c!=null?Math.round(c):'–')+'</span> KH');
+    seg.push('<span style="color:var(--teal)">'+(p!=null?Math.round(p):'–')+'</span> Eiw');
+    if(pct!=null) seg.push(pct+'%');
+    return seg.join(' · ');
+  };
+  const order = db.mealTypes||[];
+  const byType = {};
+  for(const m of meals){ const t=m.name||'Mahlzeit'; (byType[t]=byType[t]||[]).push(m); }
+  const typeOrder = [...order.filter(t=>byType[t]), ...Object.keys(byType).filter(t=>!order.includes(t))];
+  const groups = typeOrder.map(t=>{
+    const items=byType[t];
+    const gk=items.reduce((a,m)=>a+(m.kcal||0),0), gp=items.reduce((a,m)=>a+(m.protein||0),0);
+    const gf=items.reduce((a,m)=>a+(m.fat||0),0), gc=items.reduce((a,m)=>a+(m.carbs||0),0);
+    const getb=kt?Math.round(gk/kt*100):null;
+    const rows=items.map(m=>{
+      const nm=m.pname||m.text||'Eintrag';
+      const amt=m.g?Math.round(m.g)+' g':'';
+      const etb=kt?Math.round((m.kcal||0)/kt*100):null;
+      return '<div class="mi"><div class="mi-main"><div class="mi-t">'+esc(nm)+'</div>'
+        +(amt?'<div class="mi-amt">'+amt+'</div>':'')
+        +'<div class="mi-macros">'+macroStr(m.fat,m.carbs,m.protein,etb)+'</div></div>'
+        +'<div class="mi-side"><div class="mi-k">'+Math.round(m.kcal||0)+'</div>'
+        +(m.k100!=null?'<button class="link" data-medit="'+m.id+'">Menge</button>':'')
+        +'<button class="link warn" data-mdel="'+m.id+'">löschen</button></div></div>';
+    }).join('');
+    return '<div class="mealgrp"><div class="mealgrp-head"><span class="mealgrp-t">'+esc(t)+'</span><span class="mealgrp-k">'+Math.round(gk)+' kcal</span></div>'
+      +'<div class="mealgrp-sub">'+macroStr(gf,gc,gp,getb)+'</div>'+rows+'</div>';
+  }).join('');
+  const total = meals.length ? '<div class="mealgrp mealgrp-total"><div class="mealgrp-head"><span class="mealgrp-t" style="font-size:13px">Summe '+fmtDate(d)+'</span><span class="mealgrp-k">'+Math.round(sum.k)+' kcal</span></div><div class="mealgrp-sub">'+macroStr(sum.f,sum.c,sum.p, kt?Math.round(sum.k/kt*100):null)+'</div></div>' : '';
+  $('#mealList').innerHTML = groups + total;
   $$('#mealList [data-mdel]').forEach(b=>b.onclick=async()=>{
     const m = meals.find(x=>x.id===b.dataset.mdel);
     if(!m) return;
