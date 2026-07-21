@@ -123,6 +123,15 @@ nav button{min-height:46px}
 .tt-lab{font:600 9px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-30)}
 .tt-val{font-family:var(--mono);font-size:20px;font-weight:500;font-variant-numeric:tabular-nums;color:var(--ink)}
 .traintimer .link{margin-left:auto}
+.ff-hint{font-size:11.5px;color:var(--ink-60);margin-top:14px}
+.ff-calc{font-family:var(--mono);font-size:14px;margin-top:10px;color:var(--ink-60)}
+.ff-calc b{color:var(--ink);font-weight:500}
+.exgrp-head{display:block;border-top:1px solid var(--grid);padding:11px 0 11px}
+.exgrp-toggle{background:none;border:0;padding:0;width:100%;text-align:left;font:650 14px/1.2 var(--sans);color:var(--ink);display:flex;align-items:center;gap:8px;cursor:pointer;min-height:0}
+.exgrp-toggle .chev{color:var(--ink-30);font-size:11px;width:10px;text-align:center;display:inline-block}
+.exgrp-n{color:var(--ink-30);font-family:var(--mono);font-size:12px;margin-left:auto}
+.exsub .li-t{padding-left:18px}
+.exsub .li-s{padding-left:18px}
 `;
 class LogbuchApp extends HTMLElement{
   connectedCallback(){
@@ -898,14 +907,14 @@ function renderMeals(){
     const gk=items.reduce((a,m)=>a+(m.kcal||0),0), gp=items.reduce((a,m)=>a+(m.protein||0),0);
     const gf=items.reduce((a,m)=>a+(m.fat||0),0), gc=items.reduce((a,m)=>a+(m.carbs||0),0);
     const getb=kt?Math.round(gk/kt*100):null;
-    const collapsed=collapsedMeals.has(t);
+    const collapsed=!openMeals.has(t);
     const rows=items.map(m=>{
       const nm=m.pname||m.text||'Eintrag';
       const amt=m.g?Math.round(m.g)+' g':'';
       const etb=kt?Math.round((m.kcal||0)/kt*100):null;
       return '<div class="mi"><div class="mi-main"><div class="mi-t">'+esc(nm)+'</div>'
         +(amt?'<div class="mi-amt">'+amt+'</div>':'')
-        +'<div class="mi-macros">'+macroStr(m.fat,m.carbs,m.protein,etb)+'</div></div>'
+        +'<div class="mi-macros">'+macroStr(m.fat,m.carbs,m.protein,etb)+(m.salt!=null?' · '+m.salt+' Salz':'')+(m.fiber!=null?' · '+m.fiber+' Ballast':'')+'</div></div>'
         +'<div class="mi-side"><div class="mi-k">'+Math.round(m.kcal||0)+'</div>'
         +(m.k100!=null?'<button class="link" data-medit="'+m.id+'">Menge</button>':'')
         +'<button class="link warn" data-mdel="'+m.id+'">löschen</button></div></div>';
@@ -921,7 +930,7 @@ function renderMeals(){
   const total = meals.length ? '<div class="mealgrp mealgrp-total"><div class="mealgrp-head"><span class="mealgrp-t" style="font-size:13px">Summe '+fmtDate(d)+'</span><span class="mealgrp-k">'+Math.round(sum.k)+' kcal</span></div><div class="mealgrp-sub">'+macroStr(sum.f,sum.c,sum.p, kt?Math.round(sum.k/kt*100):null)+'</div></div>' : '';
   $('#mealList').innerHTML = groups + total;
   $$('#mealList [data-add]').forEach(b=>b.onclick=()=>{ curMeal=b.dataset.add; openFood(); });
-  $$('#mealList [data-collapse]').forEach(b=>b.onclick=()=>{ const t=b.dataset.collapse; if(collapsedMeals.has(t)) collapsedMeals.delete(t); else collapsedMeals.add(t); renderMeals(); });
+  $$('#mealList [data-collapse]').forEach(b=>b.onclick=()=>{ const t=b.dataset.collapse; if(openMeals.has(t)) openMeals.delete(t); else openMeals.add(t); renderMeals(); });
   $$('#mealList [data-mdel]').forEach(b=>b.onclick=async()=>{
     const m = meals.find(x=>x.id===b.dataset.mdel);
     if(!m) return;
@@ -940,11 +949,12 @@ function renderMeals(){
     const g = num(inp); if(g==null || g<0) return;
     const nk = Math.round((m.k100||0)*g/100), np = Math.round((m.p100||0)*g/100);
     const nf = m.f100!=null?Math.round((m.f100||0)*g/100):null, nc = m.c100!=null?Math.round((m.c100||0)*g/100):null;
+    const nsa = m.s100!=null?Math.round((m.s100||0)*g/100*10)/10:null, nfi = m.fib100!=null?Math.round((m.fib100||0)*g/100*10)/10:null;
     e.kcal = Math.max(0, Math.round((e.kcal||0) - (m.kcal||0) + nk));
     e.protein = Math.max(0, Math.round((e.protein||0) - (m.protein||0) + np));
     if(m.fat!=null && nf!=null) e.fat = Math.max(0, Math.round((e.fat||0) - m.fat + nf));
     if(m.carbs!=null && nc!=null) e.carbs = Math.max(0, Math.round((e.carbs||0) - m.carbs + nc));
-    m.kcal = nk; m.protein = np; if(nf!=null) m.fat = nf; if(nc!=null) m.carbs = nc; m.g = g;
+    m.kcal = nk; m.protein = np; if(nf!=null) m.fat = nf; if(nc!=null) m.carbs = nc; if(nsa!=null) m.salt = nsa; if(nfi!=null) m.fiber = nfi; m.g = g;
     if(m.pname) m.text = `${m.pname} — ${g} g`;
     else if(m.text) m.text = m.text.replace(/—\s*[\d.,]+\s*g/, '— '+g+' g');
     await Store.save(db); renderAll(); toast('Menge geändert');
@@ -1037,7 +1047,7 @@ foodOv.innerHTML=`<div class="picksheet">
 </div>`;
 root.appendChild(foodOv);
 let foodCart=[];
-const collapsedMeals=new Set();
+const openMeals=new Set(); const openExGroups=new Set();
 function closeFood(){ foodOv.style.display='none'; foodCart=[]; }
 function showList(){
   foodOv.querySelector('.prodlist').style.display='block';
@@ -1067,7 +1077,7 @@ async function commitCart(){
     if(it.pr!=null) e.protein=Math.round((e.protein||0)+it.pr);
     if(it.ft!=null) e.fat=Math.round((e.fat||0)+it.ft);
     if(it.cb!=null) e.carbs=Math.round((e.carbs||0)+it.cb);
-    e.meals.push({id:uid(), name:curMeal||'Mahlzeit', text:it.text||'', kcal:Math.round(it.kc||0), protein:it.pr!=null?Math.round(it.pr):0, fat:it.ft!=null?Math.round(it.ft):null, carbs:it.cb!=null?Math.round(it.cb):null, k100:it.k100, p100:it.p100, f100:it.f100, c100:it.c100, g:it.g, pname:it.pname});
+    e.meals.push({id:uid(), name:curMeal||'Mahlzeit', text:it.text||'', kcal:Math.round(it.kc||0), protein:it.pr!=null?Math.round(it.pr):0, fat:it.ft!=null?Math.round(it.ft):null, carbs:it.cb!=null?Math.round(it.cb):null, k100:it.k100, p100:it.p100, f100:it.f100, c100:it.c100, salt:it.salt!=null?it.salt:null, fiber:it.fib!=null?it.fib:null, s100:it.s100, fib100:it.fib100, g:it.g, pname:it.pname});
   }
   const n=foodCart.length; foodCart=[];
   await Store.save(db); renderAll(); closeFood(); toast(n+' Artikel eingetragen');
@@ -1079,16 +1089,32 @@ function showFree(){
   const ff=foodOv.querySelector('.freeform'); ff.style.display='block';
   ff.innerHTML=`<button class="link freeback">← zurück</button>
     <label class="f" style="margin-top:8px">Bezeichnung</label>
-    <input class="ff-name" placeholder="z. B. Reis mit Hähnchen">
-    <div class="row" style="margin-top:10px"><div><label class="f">Kalorien</label><input type="number" class="ff-kc" inputmode="numeric" placeholder="kcal"></div><div><label class="f">Protein (g)</label><input type="number" class="ff-pr" inputmode="numeric"></div></div>
-    <div class="row" style="margin-top:10px"><div><label class="f">Fett (g)</label><input type="number" class="ff-ft" inputmode="numeric"></div><div><label class="f">Kohlenhydrate (g)</label><input type="number" class="ff-cb" inputmode="numeric"></div></div>
+    <input class="ff-name" placeholder="z. B. Skyr 0,2 %">
+    <label class="f" style="margin-top:10px">Menge (g / ml)</label>
+    <input type="text" class="ff-g" inputmode="decimal" placeholder="z. B. 150">
+    <div class="ff-hint">Nährwerte pro 100 g / 100 ml eingeben (Komma erlaubt):</div>
+    <div class="row" style="margin-top:8px"><div><label class="f">Kalorien /100</label><input type="text" class="ff-kc" inputmode="decimal" placeholder="kcal"></div><div><label class="f">Protein /100</label><input type="text" class="ff-pr" inputmode="decimal" placeholder="g"></div></div>
+    <div class="row" style="margin-top:10px"><div><label class="f">Fett /100</label><input type="text" class="ff-ft" inputmode="decimal" placeholder="g"></div><div><label class="f">Kohlenhydrate /100</label><input type="text" class="ff-cb" inputmode="decimal" placeholder="g"></div></div>
+    <div class="row" style="margin-top:10px"><div><label class="f">Salz /100</label><input type="text" class="ff-salt" inputmode="decimal" placeholder="g"></div><div><label class="f">Ballaststoffe /100</label><input type="text" class="ff-fib" inputmode="decimal" placeholder="g"></div></div>
+    <div class="ff-calc"></div>
     <button class="ff-add" style="width:100%;margin-top:12px">Zur Auswahl hinzufügen</button>`;
+  const gEl=ff.querySelector('.ff-g'), calc=ff.querySelector('.ff-calc');
+  const per=()=>({kc:num(ff.querySelector('.ff-kc').value), pr:num(ff.querySelector('.ff-pr').value), ft:num(ff.querySelector('.ff-ft').value), cb:num(ff.querySelector('.ff-cb').value), salt:num(ff.querySelector('.ff-salt').value), fib:num(ff.querySelector('.ff-fib').value)});
+  function upd(){
+    const g=num(gEl.value)||100; const p=per();
+    const sc=x=>x!=null?Math.round(x*g/100*10)/10:null;
+    const kc=p.kc!=null?Math.round(p.kc*g/100):null;
+    calc.innerHTML = p.kc!=null ? '<b>'+kc+' kcal</b> für '+(num(gEl.value)||100)+' g' : '';
+    return {g, p, kc, pr:sc(p.pr), ft:sc(p.ft), cb:sc(p.cb), salt:sc(p.salt), fib:sc(p.fib)};
+  }
+  ff.querySelectorAll('input').forEach(i=>i.addEventListener('input',upd));
   ff.querySelector('.freeback').onclick=showList;
   ff.querySelector('.ff-add').onclick=()=>{
     const name=ff.querySelector('.ff-name').value.trim();
-    const kc=num(ff.querySelector('.ff-kc').value), pr=num(ff.querySelector('.ff-pr').value), ft=num(ff.querySelector('.ff-ft').value), cb=num(ff.querySelector('.ff-cb').value);
-    if(kc==null){ toast('Bitte Kalorien angeben'); return; }
-    addToCart({pname:name||'Freier Eintrag', text:name||'', kc, pr, ft, cb});
+    const {g,p,kc,pr,ft,cb,salt,fib}=upd();
+    if(p.kc==null){ toast('Bitte Kalorien pro 100 angeben'); return; }
+    const text=(name||'Freier Eintrag')+' — '+Math.round(g)+' g';
+    addToCart({pname:name||'Freier Eintrag', text, kc, pr, ft, cb, salt, fib, g:Math.round(g), k100:p.kc, p100:p.pr, f100:p.ft, c100:p.cb, s100:p.salt, fib100:p.fib});
     showList(); toast('Hinzugefügt');
   };
   setTimeout(()=>{ const el=ff.querySelector('.ff-name'); if(el) el.focus(); },60);
@@ -1392,14 +1418,18 @@ function renderExList(){
   let html = '';
   for(const g of GROUP_ORDER){
     if(!byG[g]) continue;
-    html += `<li style="display:block;border-top:0;padding:12px 0 2px"><div class="pickgrp" style="padding:0">${g}</div></li>`;
-    html += byG[g].map(e=>{
-      const n = db.workouts.filter(w=>w.exercise===e).length;
-      return `<li><div class="li-main"><div class="li-t">${esc(e)}</div><div class="li-s">${n} Einheiten</div></div>
-        <div class="li-d"><button class="link" data-exgrp="${esc(e)}">Gruppe ändern</button>${n?'':`<br><button class="link warn" data-exdel="${esc(e)}">entfernen</button>`}</div></li>`;
-    }).join('');
+    const open=openExGroups.has(g);
+    html += '<li class="exgrp-head"><button class="exgrp-toggle" data-exg="'+esc(g)+'"><span class="chev">'+(open?'▾':'▸')+'</span>'+g+'<span class="exgrp-n">'+byG[g].length+'</span></button></li>';
+    if(open){
+      html += byG[g].map(e=>{
+        const n = db.workouts.filter(w=>w.exercise===e).length;
+        return '<li class="exsub"><div class="li-main"><div class="li-t">'+esc(e)+'</div><div class="li-s">'+n+' Einheiten</div></div>'
+          +'<div class="li-d"><button class="link" data-exgrp="'+esc(e)+'">Gruppe ändern</button>'+(n?'':'<br><button class="link warn" data-exdel="'+esc(e)+'">entfernen</button>')+'</div></li>';
+      }).join('');
+    }
   }
   $('#exlist').innerHTML = html;
+  $$('#exlist [data-exg]').forEach(b=>b.onclick=()=>{ const g=b.dataset.exg; if(openExGroups.has(g)) openExGroups.delete(g); else openExGroups.add(g); renderExList(); });
   $$('#exlist [data-exgrp]').forEach(b=>b.onclick=async()=>{
     const name = b.dataset.exgrp;
     const g = await chooseGroup(name, muscleOf(name));
