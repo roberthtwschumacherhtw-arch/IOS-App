@@ -149,6 +149,20 @@ nav button{min-height:46px}
 .macrolegend .ml i{width:11px;height:11px;border-radius:3px;flex:none}
 .macrolegend .ml b{font-family:var(--mono);font-weight:500}
 .macrolegend .ml span{color:var(--ink-30);font-family:var(--mono);font-size:12px;margin-left:auto}
+.imp-summary{font-size:13px;margin-bottom:12px}
+.imp-sess{border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:12px;background:var(--card)}
+.imp-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.imp-day{flex:1;font-weight:600}
+.imp-date{font-family:var(--mono);font-size:12px;color:var(--ink-60);flex:none}
+.imp-ex{border-top:1px solid var(--grid);padding:10px 0 6px}
+.imp-exhead{display:flex;gap:8px;align-items:center;margin-bottom:7px}
+.imp-exname{flex:1;font-weight:600}
+.imp-set{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.imp-set .setno{width:14px;flex:none}
+.imp-set input{flex:1;min-width:0;text-align:center}
+.imp-x{font-size:11.5px;color:var(--ink-60);flex:none}
+.imp-note{font-size:12px;color:var(--ink-30);margin:3px 0 5px}
+.imp-delset,.imp-delex,.imp-delsess{flex:none}
 `;
 class LogbuchApp extends HTMLElement{
   connectedCallback(){
@@ -1929,27 +1943,43 @@ function parseGermanDate(lines){
   for(const l of lines){ const m=l.toLowerCase().match(/(\d{1,2})\.?\s+([a-zäö]+)\s+(20\d\d)/); if(m && _DEMON[m[2]]) return m[3]+'-'+String(_DEMON[m[2]]).padStart(2,'0')+'-'+String(+m[1]).padStart(2,'0'); }
   return null;
 }
+function _splitCfg(name){
+  const m=name.match(/^(.*?)[\s]+([wW]\s?\d[\d.,]*\s?(?:kg)?|[wW])\s*$/);
+  if(m && m[1].trim()) return {clean:m[1].trim(), cfg:m[2].trim()};
+  return {clean:name.trim(), cfg:''};
+}
 function parseNote(filename, html){
   const lines=htmlToLines(html);
   let date=null; const mf=filename.match(/(20\d\d)[-_.](\d{2})[-_.](\d{2})/); if(mf) date=mf[1]+'-'+mf[2]+'-'+mf[3];
   if(!date) date=parseGermanDate(lines);
   let day=null, base=filename.replace(/\.html?$/i,''); base=base.replace(/^.*?(20\d\d[-_.]\d{2}[-_.]\d{2})[_\- ]*/,''); if(base.trim()) day=base.replace(/[_]+/g,'/').replace(/-/g,' ').trim();
-  const setRe=/^(\d+(?:[.,]\d+)?)\s*[x×*]\s*(\d+(?:[.,]\d+)?)\s*(.*)$/i;
   const dateWordRe=/(januar|februar|märz|maerz|april|mai|juni|juli|august|september|oktober|november|dezember|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag)/i;
+  const content=lines.filter(l=>!(dateWordRe.test(l) && /20\d\d/.test(l)));
+  if(content.length){ if(!day) day=content[0]; content.shift(); } // erste Zeile = Split-Titel
+  const setRe=/(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)/g;
   const exercises=[]; let cur=null;
-  for(const l of lines){
-    if(dateWordRe.test(l) && /20\d\d/.test(l)) continue;
-    const m=l.match(setRe);
-    if(m){
+  for(const raw of content){
+    const line=raw.trim(); if(!line) continue;
+    const toks=[...line.matchAll(setRe)];
+    const startsDigit=/^\s*\d/.test(line);
+    if(startsDigit && toks.length){
       if(!cur){ cur={name:'Übung',sets:[],note:''}; exercises.push(cur); }
-      const reps=num(m[1]), w=num(m[2]); if(reps!=null&&w!=null) cur.sets.push({w:w,r:reps});
-      const rest=(m[3]||'').trim(); if(rest) cur.note=(cur.note?cur.note+' · ':'')+rest;
-    } else { cur={name:l,sets:[],note:''}; exercises.push(cur); }
+      for(const t of toks) cur.sets.push({r:num(t[1]), w:num(t[2])});
+      const noteText=line.replace(setRe,' ').replace(/\s+/g,' ').trim();
+      if(noteText) cur.note=(cur.note?cur.note+' · ':'')+noteText;
+    } else {
+      let namePart = toks.length ? line.slice(0, toks[0].index).trim() : line;
+      const sc=_splitCfg(namePart);
+      cur={name:sc.clean||'Übung', sets:[], note:sc.cfg||''};
+      exercises.push(cur);
+      for(const t of toks) cur.sets.push({r:num(t[1]), w:num(t[2])});
+      if(toks.length){ const last=toks[toks.length-1]; const after=line.slice(last.index+last[0].length).trim(); if(after) cur.note=(cur.note?cur.note+' · ':'')+after; }
+    }
   }
   const withSets=exercises.filter(e=>e.sets.length);
   return {date, day, exercises:withSets, dropped:exercises.length-withSets.length};
 }
-let _pendingNotes=[];
+let _pendingNotes=[]; let _pendingBad=[];
 function _isDup(dateS,ex){ return db.workouts.some(w=>w.date===dateS && w.exercise===ex.name && JSON.stringify(w.sets)===JSON.stringify(ex.sets)); }
 async function handleNoteFiles(files){
   const sessions=[]; const bad=[];
@@ -1959,23 +1989,51 @@ async function handleNoteFiles(files){
     if(!p.date || !p.exercises.length){ bad.push(f.name); continue; }
     sessions.push(p);
   }
-  _pendingNotes=sessions;
-  const prev=$('#notePreview'), btn=$('#noteImport');
-  if(!sessions.length){ prev.style.display='block'; prev.innerHTML='<div class="empty">Keine Einheiten erkannt'+(bad.length?' ('+bad.length+' Datei(en) übersprungen)':'')+'</div>'; btn.style.display='none'; return; }
+  _pendingNotes=sessions; _pendingBad=bad;
+  renderImportEditor();
+}
+function renderImportEditor(){
+  const host=$('#notePreview'), btn=$('#noteImport');
+  if(!_pendingNotes.length){ host.style.display='block'; host.innerHTML='<div class="empty">Keine Einheiten erkannt'+((_pendingBad&&_pendingBad.length)?' ('+_pendingBad.length+' Datei(en) übersprungen)':'')+'</div>'; btn.style.display='none'; return; }
   let totEx=0, totSets=0, dup=0;
-  for(const s of sessions){ for(const ex of s.exercises){ totEx++; totSets+=ex.sets.length; if(_isDup(s.date,ex)) dup++; } }
-  const sample=sessions.slice(0,4).map(s=>'<li><div class="li-main"><div class="li-t">'+esc(s.day||'Freies Training')+'</div><div class="li-s">'+s.exercises.map(e=>esc(e.name)+' '+e.sets.length+'×').join(' · ')+'</div></div><div class="li-d">'+fmtDate(s.date)+'</div></li>').join('');
-  prev.style.display='block';
-  prev.innerHTML='<div class="hint" style="margin:0 0 8px"><b>'+sessions.length+'</b> Einheiten · '+totEx+' Übungen · '+totSets+' Sätze'+(dup?' · '+dup+' bereits vorhanden (übersprungen)':'')+(bad.length?' · '+bad.length+' Datei(en) ohne Sätze':'')+'</div><ul class="list">'+sample+'</ul>'+(sessions.length>4?'<div class="hint">… und '+(sessions.length-4)+' weitere</div>':'');
-  btn.style.display='block'; btn.textContent='Importieren ('+(totEx-dup)+' Übungen)';
+  for(const s of _pendingNotes){ for(const ex of s.exercises){ totEx++; const sets=ex.sets.filter(st=>st.w!=null&&st.r!=null&&st.r>0); totSets+=sets.length; if(db.workouts.some(w=>w.date===s.date && w.exercise===(ex.name||'').trim() && JSON.stringify(w.sets)===JSON.stringify(sets))) dup++; } }
+  const summary='<div class="imp-summary"><b>'+_pendingNotes.length+'</b> Einheiten · '+totEx+' Übungen · '+totSets+' Sätze'+(dup?' · '+dup+' bereits vorhanden':'')+((_pendingBad&&_pendingBad.length)?' · '+_pendingBad.length+' Datei(en) ohne Sätze':'')+'<br><span class="hint">Alles editierbar — Format: kg × Wdh. Korrigiere und lösche vor dem Import.</span></div>';
+  host.innerHTML = summary + _pendingNotes.map((s,si)=>
+    '<div class="imp-sess">'
+    +'<div class="imp-head"><input class="imp-day" data-si="'+si+'" value="'+esc(s.day||'')+'" placeholder="Trainingstag"><span class="imp-date">'+fmtDate(s.date)+'</span><button class="link warn imp-delsess" data-si="'+si+'">Einheit ✕</button></div>'
+    + s.exercises.map((ex,ei)=>
+        '<div class="imp-ex">'
+        +'<div class="imp-exhead"><input class="imp-exname" data-si="'+si+'" data-ei="'+ei+'" value="'+esc(ex.name||'')+'"><button class="link warn imp-delex" data-si="'+si+'" data-ei="'+ei+'">✕</button></div>'
+        + ex.sets.map((st,ki)=>
+            '<div class="imp-set"><span class="setno">'+(ki+1)+'</span><input class="imp-w" inputmode="decimal" data-si="'+si+'" data-ei="'+ei+'" data-ki="'+ki+'" value="'+(st.w!=null?st.w:'')+'"><span class="imp-x">kg ×</span><input class="imp-r" inputmode="decimal" data-si="'+si+'" data-ei="'+ei+'" data-ki="'+ki+'" value="'+(st.r!=null?st.r:'')+'"><span class="imp-x">Wdh</span><button class="link warn imp-delset" data-si="'+si+'" data-ei="'+ei+'" data-ki="'+ki+'">✕</button></div>'
+          ).join('')
+        +'<button class="link imp-addset" data-si="'+si+'" data-ei="'+ei+'">＋ Satz</button>'
+        +(ex.note?'<div class="imp-note">Notiz: '+esc(ex.note)+'</div>':'')
+        +'</div>'
+      ).join('')
+    +'<button class="link imp-addex" data-si="'+si+'">＋ Übung</button>'
+    +'</div>'
+  ).join('');
+  host.style.display='block';
+  const S=si=>_pendingNotes[+si], E=(si,ei)=>_pendingNotes[+si].exercises[+ei];
+  host.querySelectorAll('.imp-day').forEach(el=>el.oninput=()=>{ S(el.dataset.si).day=el.value.trim()||null; });
+  host.querySelectorAll('.imp-exname').forEach(el=>el.oninput=()=>{ E(el.dataset.si,el.dataset.ei).name=el.value; });
+  host.querySelectorAll('.imp-w').forEach(el=>el.onchange=()=>{ E(el.dataset.si,el.dataset.ei).sets[+el.dataset.ki].w=num(el.value); });
+  host.querySelectorAll('.imp-r').forEach(el=>el.onchange=()=>{ E(el.dataset.si,el.dataset.ei).sets[+el.dataset.ki].r=num(el.value); });
+  host.querySelectorAll('.imp-delset').forEach(el=>el.onclick=()=>{ E(el.dataset.si,el.dataset.ei).sets.splice(+el.dataset.ki,1); renderImportEditor(); });
+  host.querySelectorAll('.imp-addset').forEach(el=>el.onclick=()=>{ E(el.dataset.si,el.dataset.ei).sets.push({w:null,r:null}); renderImportEditor(); });
+  host.querySelectorAll('.imp-delex').forEach(el=>el.onclick=()=>{ S(el.dataset.si).exercises.splice(+el.dataset.ei,1); renderImportEditor(); });
+  host.querySelectorAll('.imp-addex').forEach(el=>el.onclick=()=>{ S(el.dataset.si).exercises.push({name:'Neue Übung',sets:[{w:null,r:null}],note:''}); renderImportEditor(); });
+  host.querySelectorAll('.imp-delsess').forEach(el=>el.onclick=()=>{ _pendingNotes.splice(+el.dataset.si,1); renderImportEditor(); });
+  btn.style.display='block'; btn.textContent='Importieren ('+_pendingNotes.length+' Einheiten)';
 }
 { const nf=$('#noteFiles'); if(nf) nf.onchange=()=>{ if(nf.files&&nf.files.length) handleNoteFiles([...nf.files]); }; }
 { const nb=$('#noteImport'); if(nb) nb.onclick=async()=>{
-    let added=0;
-    for(const s of _pendingNotes){ const sid=uid(); for(const ex of s.exercises){ if(!ex.sets.length||_isDup(s.date,ex)) continue; ensureEx(ex.name); db.workouts.push({id:uid(), sessionId:sid, date:s.date, exercise:ex.name, sets:ex.sets, note:ex.note||null, day:s.day||null, swapped:null}); added++; } }
+    let added=0, sess=0;
+    for(const s of _pendingNotes){ const sid=uid(); let any=false; for(const ex of s.exercises){ const nm=(ex.name||'').trim()||'Übung'; const sets=(ex.sets||[]).filter(st=>st.w!=null && st.r!=null && st.r>0); if(!sets.length) continue; if(db.workouts.some(w=>w.date===s.date && w.exercise===nm && JSON.stringify(w.sets)===JSON.stringify(sets))) continue; ensureEx(nm); db.workouts.push({id:uid(), sessionId:sid, date:s.date, exercise:nm, sets, note:ex.note||null, day:s.day||null, swapped:null}); added++; any=true; } if(any) sess++; }
     await Store.save(db); renderAll();
     _pendingNotes=[]; $('#notePreview').style.display='none'; $('#noteImport').style.display='none'; const nf=$('#noteFiles'); if(nf) nf.value='';
-    toast(added+' Übungen importiert — '+fmtDate(TODAY));
+    toast(added+' Übungen aus '+sess+' Einheiten importiert');
   }; }
 
 function renderAll(){
