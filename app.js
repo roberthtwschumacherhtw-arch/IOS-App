@@ -162,6 +162,8 @@ nav button{min-height:46px}
 .imp-set input{flex:1;min-width:0;text-align:center}
 .imp-x{font-size:11.5px;color:var(--ink-60);flex:none}
 .imp-note{font-size:12px;color:var(--ink-30);margin:3px 0 5px}
+.imp-raw{font-size:11px;color:var(--ink-30);font-family:var(--mono);margin-bottom:4px}
+.imp-exsel{flex:1;min-width:0;font-weight:600}
 .imp-delset,.imp-delex,.imp-delsess{flex:none}
 `;
 class LogbuchApp extends HTMLElement{
@@ -1943,6 +1945,15 @@ function parseGermanDate(lines){
   for(const l of lines){ const m=l.toLowerCase().match(/(\d{1,2})\.?\s+([a-zäö]+)\s+(20\d\d)/); if(m && _DEMON[m[2]]) return m[3]+'-'+String(_DEMON[m[2]]).padStart(2,'0')+'-'+String(+m[1]).padStart(2,'0'); }
   return null;
 }
+function _foldName(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
+function matchExercise(name){
+  const n=_foldName(name); if(!n) return '';
+  let e=db.exercises.find(x=>_foldName(x)===n); if(e) return e;
+  e=db.exercises.find(x=>{ const f=_foldName(x); return f && n.startsWith(f+' '); }); if(e) return e;
+  const fw=n.split(' ')[0];
+  if(fw.length>=4){ e=db.exercises.find(x=>{ const xf=_foldName(x).split(' ')[0]; return xf.length>=4 && (xf.startsWith(fw)||fw.startsWith(xf)); }); if(e) return e; }
+  return '';
+}
 function _splitCfg(name){
   const m=name.match(/^(.*?)[\s]+([wW]\s?\d[\d.,]*\s?(?:kg)?|[wW])\s*$/);
   if(m && m[1].trim()) return {clean:m[1].trim(), cfg:m[2].trim()};
@@ -1977,6 +1988,7 @@ function parseNote(filename, html){
     }
   }
   const withSets=exercises.filter(e=>e.sets.length);
+  withSets.forEach(e=>{ e.match=matchExercise(e.name); });
   return {date, day, exercises:withSets, dropped:exercises.length-withSets.length};
 }
 let _pendingNotes=[]; let _pendingBad=[];
@@ -2003,7 +2015,9 @@ function renderImportEditor(){
     +'<div class="imp-head"><input class="imp-day" data-si="'+si+'" value="'+esc(s.day||'')+'" placeholder="Trainingstag"><span class="imp-date">'+fmtDate(s.date)+'</span><button class="link warn imp-delsess" data-si="'+si+'">Einheit ✕</button></div>'
     + s.exercises.map((ex,ei)=>
         '<div class="imp-ex">'
-        +'<div class="imp-exhead"><input class="imp-exname" data-si="'+si+'" data-ei="'+ei+'" value="'+esc(ex.name||'')+'"><button class="link warn imp-delex" data-si="'+si+'" data-ei="'+ei+'">✕</button></div>'
+        +'<div class="imp-raw">aus Notiz: „'+esc(ex.name||'')+'"</div>'
+        +'<div class="imp-exhead"><select class="imp-exsel" data-si="'+si+'" data-ei="'+ei+'"><option value="__new__"'+(ex.match?'':' selected')+'>＋ Neue Übung anlegen</option>'+db.exercises.map(x=>'<option value="'+esc(x)+'"'+(ex.match===x?' selected':'')+'>'+esc(x)+'</option>').join('')+'</select><button class="link warn imp-delex" data-si="'+si+'" data-ei="'+ei+'">✕</button></div>'
+        +(ex.match?'':'<input class="imp-newname" data-si="'+si+'" data-ei="'+ei+'" value="'+esc(ex.name||'')+'" placeholder="Name der neuen Übung" style="margin-bottom:6px">')
         + ex.sets.map((st,ki)=>
             '<div class="imp-set"><span class="setno">'+(ki+1)+'</span><input class="imp-w" inputmode="decimal" data-si="'+si+'" data-ei="'+ei+'" data-ki="'+ki+'" value="'+(st.w!=null?st.w:'')+'"><span class="imp-x">kg ×</span><input class="imp-r" inputmode="decimal" data-si="'+si+'" data-ei="'+ei+'" data-ki="'+ki+'" value="'+(st.r!=null?st.r:'')+'"><span class="imp-x">Wdh</span><button class="link warn imp-delset" data-si="'+si+'" data-ei="'+ei+'" data-ki="'+ki+'">✕</button></div>'
           ).join('')
@@ -2017,7 +2031,8 @@ function renderImportEditor(){
   host.style.display='block';
   const S=si=>_pendingNotes[+si], E=(si,ei)=>_pendingNotes[+si].exercises[+ei];
   host.querySelectorAll('.imp-day').forEach(el=>el.oninput=()=>{ S(el.dataset.si).day=el.value.trim()||null; });
-  host.querySelectorAll('.imp-exname').forEach(el=>el.oninput=()=>{ E(el.dataset.si,el.dataset.ei).name=el.value; });
+  host.querySelectorAll('.imp-exsel').forEach(el=>el.onchange=()=>{ const ex=E(el.dataset.si,el.dataset.ei); ex.match = el.value==='__new__'?'':el.value; renderImportEditor(); });
+  host.querySelectorAll('.imp-newname').forEach(el=>el.oninput=()=>{ E(el.dataset.si,el.dataset.ei).name=el.value; });
   host.querySelectorAll('.imp-w').forEach(el=>el.onchange=()=>{ E(el.dataset.si,el.dataset.ei).sets[+el.dataset.ki].w=num(el.value); });
   host.querySelectorAll('.imp-r').forEach(el=>el.onchange=()=>{ E(el.dataset.si,el.dataset.ei).sets[+el.dataset.ki].r=num(el.value); });
   host.querySelectorAll('.imp-delset').forEach(el=>el.onclick=()=>{ E(el.dataset.si,el.dataset.ei).sets.splice(+el.dataset.ki,1); renderImportEditor(); });
@@ -2030,7 +2045,7 @@ function renderImportEditor(){
 { const nf=$('#noteFiles'); if(nf) nf.onchange=()=>{ if(nf.files&&nf.files.length) handleNoteFiles([...nf.files]); }; }
 { const nb=$('#noteImport'); if(nb) nb.onclick=async()=>{
     let added=0, sess=0;
-    for(const s of _pendingNotes){ const sid=uid(); let any=false; for(const ex of s.exercises){ const nm=(ex.name||'').trim()||'Übung'; const sets=(ex.sets||[]).filter(st=>st.w!=null && st.r!=null && st.r>0); if(!sets.length) continue; if(db.workouts.some(w=>w.date===s.date && w.exercise===nm && JSON.stringify(w.sets)===JSON.stringify(sets))) continue; ensureEx(nm); db.workouts.push({id:uid(), sessionId:sid, date:s.date, exercise:nm, sets, note:ex.note||null, day:s.day||null, swapped:null}); added++; any=true; } if(any) sess++; }
+    for(const s of _pendingNotes){ const sid=uid(); let any=false; for(const ex of s.exercises){ const nm=((ex.match||ex.name)||'').trim()||'Übung'; const sets=(ex.sets||[]).filter(st=>st.w!=null && st.r!=null && st.r>0); if(!sets.length) continue; if(db.workouts.some(w=>w.date===s.date && w.exercise===nm && JSON.stringify(w.sets)===JSON.stringify(sets))) continue; ensureEx(nm); db.workouts.push({id:uid(), sessionId:sid, date:s.date, exercise:nm, sets, note:ex.note||null, day:s.day||null, swapped:null}); added++; any=true; } if(any) sess++; }
     await Store.save(db); renderAll();
     _pendingNotes=[]; $('#notePreview').style.display='none'; $('#noteImport').style.display='none'; const nf=$('#noteFiles'); if(nf) nf.value='';
     toast(added+' Übungen aus '+sess+' Einheiten importiert');
