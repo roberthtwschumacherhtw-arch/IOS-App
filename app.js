@@ -1,6 +1,6 @@
 (function(){
 const CSS = "\n:host{\n  --bg:#F4F6F8; --card:#FFFFFF; --field:#F7F8FA; --line:#E3E8EE; --grid:#EDF1F5;\n  --ink:#1B2530; --ink-60:#5F6C7B; --ink-30:#9AA6B3;\n  --accent-base:#33639C;\n  --accent:var(--accent-base);\n  --accent:oklch(from var(--accent-base) 0.48 c h);\n  --on-accent:#fff;\n  --blue:var(--accent);\n  --teal:#2E7D74; --ochre:#A67926; --signal:#C4553F;\n  --r:14px; --ri:9px;\n  --mono:ui-monospace,\"SF Mono\",SFMono-Regular,Menlo,monospace;\n  --sans:\"Instrument Sans\",-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;\n  display:block; min-height:100vh;\n  background:var(--bg); color:var(--ink);\n  font-family:var(--sans); font-size:15px; line-height:1.5;\n  padding-bottom:calc(86px + env(safe-area-inset-bottom));\n  -webkit-font-smoothing:antialiased;\n}\n@media (prefers-color-scheme:dark){\n  :host{\n    --bg:#10151A; --card:#171D24; --field:#10151A; --line:#242C35; --grid:#1C232B;\n    --ink:#E7EBEF; --ink-60:#96A2AF; --ink-30:#5A6673;\n    --accent:var(--accent-base);\n    --accent:oklch(from var(--accent-base) 0.74 c h);\n    --on-accent:#10151A;\n    --teal:#5FB3A8; --ochre:#C79A4B; --signal:#DB7A63;\n  }\n}\n:host([paper=\"true\"]){\n  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);\n  background-size:22px 22px;\n}\n*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}\n.wrap{max-width:580px;margin:0 auto;padding:0 16px}\n\nheader{\n  padding:calc(16px + env(safe-area-inset-top)) 16px 13px;\n  border-bottom:1px solid var(--line);\n  background:color-mix(in srgb,var(--bg) 86%,transparent);\n  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);\n  position:sticky;top:0;z-index:20;\n}\nheader .inner{max-width:580px;margin:0 auto;display:flex;align-items:baseline;justify-content:space-between}\nh1{font:650 17px/1 var(--sans);letter-spacing:-.01em;margin:0}\nh1::before{content:\"\";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:8px;vertical-align:1px}\n.today{font-family:var(--mono);font-size:12px;color:var(--ink-60);letter-spacing:.02em}\n\n.card{\n  background:var(--card);\n  border:1px solid var(--line);\n  border-radius:var(--r);\n  padding:18px;\n  margin:14px 0;\n  box-shadow:0 1px 2px rgba(15,23,32,.04);\n}\n.card > h2{\n  font:600 11px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;\n  color:var(--ink-60);margin:0 0 14px;\n}\n.hint{font-size:12.5px;color:var(--ink-60);margin:8px 0 0}\n:host([compact=\"true\"]) .card{padding:13px;margin:10px 0}\n\nlabel.f{display:block;font:550 11px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-60);margin:0 0 6px}\ninput,select,textarea,button{font-family:inherit;font-size:16px;color:var(--ink)}\ninput,select,textarea{\n  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--ri);\n  background:var(--field);appearance:none;\n}\ninput[type=number]{font-family:var(--mono);font-variant-numeric:tabular-nums}\ninput:focus,select:focus,textarea:focus{\n  outline:none;border-color:var(--accent);\n  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent);\n}\nbutton:focus-visible{outline:2px solid var(--accent);outline-offset:2px}\n.row{display:flex;gap:10px}\n.row > *{flex:1;min-width:0}\n\nbutton{cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);\n  padding:11px 16px;border-radius:var(--ri);font-weight:600;letter-spacing:.01em}\nbutton.ghost{background:transparent;color:var(--ink);border-color:var(--line)}\nbutton.tiny{padding:7px 10px;font-size:13px}\nbutton.link{background:none;border:0;padding:4px 0;font-size:13px;color:var(--ink-60);font-weight:500}\nbutton.link.warn{color:var(--signal)}\nbutton:active{transform:translateY(1px)}\n\n.block{\n  border:1px solid var(--line);border-radius:var(--r);background:var(--card);\n  padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(15,23,32,.04);\n}\n.block.swapped{box-shadow:inset 3px 0 0 var(--ochre),0 1px 2px rgba(15,23,32,.04)}\n.block-head{display:flex;gap:8px;align-items:center;margin-bottom:10px}\n.block-head select{flex:1;font-weight:600}\n.block-head .rm{flex:none;width:38px;padding:8px 0;text-align:center;border:0;\n  background:transparent;color:var(--ink-30);font-weight:400;border-radius:var(--ri)}\n.swap-tag{font:600 9px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ochre);margin:-4px 0 8px}\n.ref{font-family:var(--mono);font-size:11.5px;color:var(--ink-60);margin:0 0 12px;word-break:break-word}\n\n.setrow{display:flex;gap:8px;align-items:center;margin-bottom:8px}\n.setno{font-family:var(--mono);font-size:12px;color:var(--ink-30);width:20px;flex:none;text-align:right}\n.setrow input{flex:1}\n.setrow .del{flex:none;width:38px;padding:9px 0;text-align:center;border:0;\n  background:transparent;color:var(--ink-30);font-weight:400;border-radius:var(--ri)}\n.block input.note{margin-top:4px;font-size:14px}\n\n.readout{\n  background:var(--card);border:1px solid var(--line);border-radius:var(--r);\n  padding:18px;margin:14px 0;box-shadow:0 1px 2px rgba(15,23,32,.04);\n  display:flex;align-items:flex-end;justify-content:space-between;gap:14px;\n}\n.readout .big{font-family:var(--mono);font-size:38px;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:-.03em;color:var(--ink)}\n.readout .big span{font-size:14px;color:var(--ink-30);letter-spacing:.04em}\n.readout .lab{font:550 10px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-30);margin-bottom:8px}\n.readout .side{text-align:right}\n.readout .side div{font-family:var(--mono);font-size:12.5px;color:var(--ink-60);font-variant-numeric:tabular-nums;margin-top:2px}\n.up{color:var(--teal)!important}.down{color:var(--signal)!important}\n\n.stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}\n.stat{background:var(--card);padding:12px 13px}\n.stat .k{font:550 10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60)}\n.stat .v{font-family:var(--mono);font-size:19px;font-variant-numeric:tabular-nums;margin-top:6px}\n.stat .s{font-size:11.5px;color:var(--ink-30);font-family:var(--mono)}\n\n.legend{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 0;font-size:11.5px;color:var(--ink-60)}\n.legend i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:5px;border-radius:1px}\n\nul.list{list-style:none;margin:0;padding:0}\nul.list li{border-top:1px solid var(--grid);padding:11px 0;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}\nul.list li:first-child{border-top:0}\n.li-main{min-width:0;flex:1}\n.li-t{font-weight:600;font-size:14px}\n.li-s{font-family:var(--mono);font-size:12px;color:var(--ink-60);margin-top:3px;word-break:break-word}\n.li-d{font-family:var(--mono);font-size:11px;color:var(--ink-30);flex:none;text-align:right}\n.pr{color:var(--signal);font-weight:700;font-size:10px;letter-spacing:.14em;text-transform:uppercase}\n.daytag{display:inline-block;font:600 9px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;\n  color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:99px;padding:3px 7px;margin-left:6px;vertical-align:1px}\n\n.split{border:1px solid var(--line);border-radius:var(--r);background:var(--card);margin-bottom:12px;overflow:hidden}\n.split-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--field)}\n.split-head .t{font-weight:650;font-size:14px}\n.day{border-top:1px solid var(--grid);padding:11px 14px}\n.day:first-of-type{border-top:0}\n.day-head{display:flex;align-items:center;justify-content:space-between;gap:8px}\n.day-head .t{font-weight:600;font-size:14px}\n.day-ex{font-family:var(--mono);font-size:12px;color:var(--ink-60);margin-top:3px}\n.day-edit{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}\n.day-edit .exline{display:flex;align-items:center;gap:8px;padding:5px 0}\n.day-edit .exline .n{flex:1;font-size:14px}\n.day-edit .exline button{flex:none}\n\n.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}\n.cal-head .t{font:600 13px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase}\n.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}\n.cal-dow{font:550 9px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-30);text-align:center;padding:4px 0 6px}\n.cal-day{\n  position:relative;aspect-ratio:1;border:1px solid transparent;border-radius:9px;\n  background:var(--field);padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;\n  font-family:var(--mono);font-size:13px;font-weight:400;color:var(--ink);letter-spacing:0;\n}\n.cal-day.today{border-color:var(--accent)}\n.cal-day.sel{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}\n.cal-dots{display:flex;gap:3px;height:4px}\n.cal-dots i{width:4px;height:4px;border-radius:50%;display:block}\n.cal-sec{border-top:1px solid var(--grid);padding:10px 0}\n.cal-sec:first-child{border-top:0;padding-top:0}\n.cal-sec:last-child{padding-bottom:0}\n.cal-sec-t{font-weight:600;font-size:14px;margin-bottom:4px}\n.cal-sec .li-s{margin-top:3px}\n\nnav{\n  position:fixed;left:0;right:0;bottom:0;z-index:30;\n  background:color-mix(in srgb,var(--bg) 88%,transparent);\n  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);\n  border-top:1px solid var(--line);\n  padding-bottom:env(safe-area-inset-bottom);\n}\nnav .inner{max-width:580px;margin:0 auto;display:flex}\nnav button{\n  flex:1;background:none;border:0;color:var(--ink-30);\n  padding:14px 0 15px;font:600 10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;\n  border-radius:0;\n}\nnav button[aria-current=page]{color:var(--accent);font-weight:700}\nnav button:active{transform:none}\n\n.view{display:none}.view.on{display:block}\nsvg.chart{display:block;width:100%;height:auto;overflow:visible}\n.empty{color:var(--ink-30);font-size:13px;text-align:center;padding:24px 0;font-family:var(--mono)}\n.toast{\n  position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom));\n  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;\n  font-size:13px;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;font-family:var(--mono);\n  max-width:86vw;text-align:center;box-shadow:0 6px 24px rgba(15,23,32,.25);\n}\n.toast.on{opacity:1}\n@media (prefers-reduced-motion:reduce){*{transition:none!important}}\n";
-const MARKUP = "<header><div class=\"inner\">\n  <h1>Logbuch</h1>\n  <div class=\"today\" id=\"today\"></div>\n</div></header>\n\n<main class=\"wrap\">\n\n<!-- ============ TRAINING ============ -->\n<section class=\"view on\" id=\"v-log\">\n  <div class=\"card\">\n    <h2>Einheit starten</h2>\n    <div class=\"row\" style=\"margin-bottom:12px\">\n      <div style=\"flex:2\"><label class=\"f\" for=\"daySel\">Trainingstag</label><select id=\"daySel\"></select></div>\n      <div style=\"flex:1\"><label class=\"f\" for=\"wdate\">Datum</label><input type=\"date\" id=\"wdate\"></div>\n    </div>\n    <p class=\"hint\" id=\"dayHint\" style=\"margin:0\"></p>\n  </div>\n\n  <div id=\"blocks\"></div>\n\n  <div class=\"row\">\n    <button class=\"ghost\" id=\"addBlock\">＋ Übung hinzufügen</button>\n  </div>\n  <button id=\"saveW\" style=\"width:100%;margin-top:12px\">Einheit speichern</button>\n\n  <div class=\"card\">\n    <h2>Letzte Einheiten</h2>\n    <ul class=\"list\" id=\"wlist\"></ul>\n  </div>\n</section>\n\n<!-- ============ PLAN ============ -->\n<section class=\"view\" id=\"v-plan\">\n  <div class=\"card\">\n    <h2>Splits &amp; Trainingstage</h2>\n    <p class=\"hint\" style=\"margin:0 0 12px\">Lege einen Split an (z. B. Push / Pull / Legs), darin die Trainingstage mit ihren Übungen. Beim Loggen wird der Tag vorausgefüllt — Änderungen dort gelten nur für die eine Einheit, der Plan bleibt unberührt.</p>\n    <div id=\"splits\"></div>\n    <button class=\"ghost\" id=\"addSplit\" style=\"width:100%\">＋ Split anlegen</button>\n  </div>\n\n  <div class=\"card\">\n    <h2>Übungskatalog</h2>\n    <ul class=\"list\" id=\"exlist\"></ul>\n    <button class=\"ghost tiny\" id=\"addExCat\" style=\"width:100%;margin-top:10px\">＋ Übung anlegen</button>\n  </div>\n</section>\n\n<!-- ============ KÖRPER ============ -->\n<section class=\"view\" id=\"v-body\">\n  <div class=\"readout\" id=\"bodyReadout\"></div>\n\n  <div class=\"card\">\n    <h2>Gewicht &amp; Kalorien</h2>\n    <div class=\"row\" style=\"margin-bottom:12px\">\n      <div><label class=\"f\" for=\"bdate\">Datum</label><input type=\"date\" id=\"bdate\"></div>\n    </div>\n    <div class=\"row\">\n      <div><label class=\"f\" for=\"bw\">Gewicht (kg)</label><input type=\"number\" id=\"bw\" step=\"0.1\" inputmode=\"decimal\" placeholder=\"78.4\"></div>\n      <div><label class=\"f\" for=\"kcal\">Kalorien</label><input type=\"number\" id=\"kcal\" step=\"10\" inputmode=\"numeric\" placeholder=\"2400\"></div>\n    </div>\n    <div class=\"row\" style=\"margin-top:12px\">\n      <div><label class=\"f\" for=\"prot\">Protein (g)</label><input type=\"number\" id=\"prot\" step=\"1\" inputmode=\"numeric\" placeholder=\"160\"></div>\n      <div><label class=\"f\" for=\"steps\">Schritte</label><input type=\"number\" id=\"steps\" step=\"100\" inputmode=\"numeric\" placeholder=\"9000\"></div>\n    </div>\n    <button id=\"saveB\" style=\"width:100%;margin-top:12px\">Eintrag speichern</button>\n    <p class=\"hint\">Nur ausgefüllte Felder werden überschrieben. Ein Tag = ein Eintrag.</p>\n  </div>\n\n  <div class=\"card\">\n    <h2>Mahlzeiten</h2>\n    <div class=\"pickchips\" id=\"mealChips\" style=\"margin-bottom:10px\"></div>\n    <div class=\"row\" style=\"margin-bottom:12px\">\n      <button class=\"ghost\" id=\"prodSearchBtn\">🔍 Produkt suchen</button>\n      <button class=\"ghost\" id=\"barcodeBtn\" style=\"flex:0 0 auto\">▣ Barcode</button>\n    </div>\n    <label class=\"f\" for=\"foodTxt\">oder frei eintragen</label>\n    <input id=\"foodTxt\" placeholder=\"z. B. 200 g Reis, 150 g Hähnchenbrust\">\n    <div class=\"row\" style=\"margin-top:10px\">\n      <div><label class=\"f\" for=\"mealKcal\">kcal (optional)</label><input type=\"number\" id=\"mealKcal\" inputmode=\"numeric\" placeholder=\"auto per API\"></div>\n      <div><label class=\"f\" for=\"mealProt\">Protein g (optional)</label><input type=\"number\" id=\"mealProt\" inputmode=\"numeric\" placeholder=\"auto per API\"></div>\n    </div>\n    <button class=\"ghost\" id=\"foodGo\" style=\"width:100%;margin-top:10px\">Mahlzeit eintragen</button>\n    <p class=\"hint\" id=\"foodInfo\">Am einfachsten oben „Produkt suchen\" oder „Barcode\" nutzen (Open Food Facts). Frei eintragen: kcal/Protein selbst angeben — ohne Angabe fragt die App deinen n8n-Webhook (falls im Daten-Tab hinterlegt).</p>\n    <ul class=\"list\" id=\"mealList\" style=\"margin-top:10px\"></ul>\n  </div>\n\n  <div class=\"card\">\n    <h2>Verlauf</h2>\n    <ul class=\"list\" id=\"blist\"></ul>\n  </div>\n</section>\n\n<!-- ============ KALENDER ============ -->\n<section class=\"view\" id=\"v-cal\">\n  <div class=\"card\">\n    <div class=\"cal-head\">\n      <button class=\"ghost tiny\" id=\"calPrev\" aria-label=\"Voriger Monat\">&#8592;</button>\n      <div class=\"t\" id=\"calTitle\"></div>\n      <button class=\"ghost tiny\" id=\"calNext\" aria-label=\"N&auml;chster Monat\">&#8594;</button>\n    </div>\n    <div class=\"cal-grid\" id=\"calGrid\"></div>\n    <div class=\"legend\">\n      <span><i style=\"background:var(--blue);width:6px;height:6px;border-radius:50%\"></i>Training</span>\n      <span><i style=\"background:var(--signal);width:6px;height:6px;border-radius:50%\"></i>Gewicht</span>\n      <span><i style=\"background:var(--teal);width:6px;height:6px;border-radius:50%\"></i>Essen</span>\n    </div>\n  </div>\n  <div class=\"card\">\n    <h2 id=\"calDayTitle\"></h2>\n    <div id=\"calDayBody\"></div>\n  </div>\n</section>\n\n<!-- ============ ZIELE ============ -->\n<section class=\"view\" id=\"v-goals\">\n  <div class=\"card\">\n    <h2 style=\"display:flex;justify-content:space-between;align-items:center\">Wochenziele <button class=\"link\" id=\"goalEdit\">anpassen</button></h2>\n    <p class=\"hint\" style=\"margin:0 0 12px\">Rollierend über die letzten 7 Tage.</p>\n    <div id=\"goals\"></div>\n  </div>\n</section>\n\n<!-- ============ ANALYSE ============ -->\n<section class=\"view\" id=\"v-an\">\n  <div class=\"card\">\n    <h2>Zeitraum</h2>\n    <div class=\"pickchips\" id=\"anPeriod\"></div>\n    <div class=\"row\" id=\"anCustom\" style=\"display:none;margin:6px 0 0\">\n      <div><label class=\"f\">Von</label><input type=\"date\" id=\"anFrom\"></div>\n      <div><label class=\"f\">Bis</label><input type=\"date\" id=\"anTo\"></div>\n    </div>\n    <div style=\"margin-top:12px\"><label class=\"f\" for=\"anAvg\">Ø-Fenster (Tage) — Glättung &amp; Vergleich</label><input type=\"number\" id=\"anAvg\" min=\"1\" max=\"90\" step=\"1\" inputmode=\"numeric\"></div>\n  </div>\n\n  <div class=\"card\">\n    <h2>Gewicht &amp; Energie</h2>\n    <div id=\"c-weight\"></div>\n    <div class=\"legend\">\n      <span><i style=\"background:var(--ink-30)\"></i>Rohwert</span>\n      <span><i style=\"background:var(--blue)\"></i>7-Tage-Schnitt</span>\n      <span><i style=\"background:var(--teal)\"></i>kcal (7-Tage-Schnitt)</span>\n    </div>\n    <div class=\"stats\" style=\"margin-top:14px\" id=\"bodyStats\"></div>\n  </div>\n\n  <div class=\"card\">\n    <h2>Kraftverlauf</h2>\n    <label class=\"f\">Übung</label>\n    <button class=\"ghost expick\" id=\"anExBtn\" style=\"width:100%;margin-bottom:14px\"></button>\n    <div id=\"c-str\"></div>\n    <div class=\"legend\">\n      <span><i style=\"background:var(--ink)\"></i>e1RM (kg)</span>\n      <span><i style=\"background:var(--ochre)\"></i>Volumen pro Einheit (kg)</span>\n    </div>\n    <div class=\"stats\" style=\"margin-top:14px\" id=\"exStats\"></div>\n  </div>\n\n  <div class=\"card\">\n    <h2>Kraft vs. Körpergewicht</h2>\n    <p class=\"hint\" style=\"margin:0 0 12px\">Beides auf den ersten Wert normiert (= 100). Divergieren die Linien, verlierst du Gewicht ohne Kraft — oder umgekehrt.</p>\n    <div id=\"c-rel\"></div>\n    <div class=\"legend\">\n      <span><i style=\"background:var(--blue)\"></i>Körpergewicht</span>\n      <span><i style=\"background:var(--ink)\"></i>e1RM</span>\n      <span><i style=\"background:var(--signal)\"></i>Relative Kraft</span>\n    </div>\n    <div class=\"stats\" style=\"margin-top:14px\" id=\"relStats\"></div>\n  </div>\n\n  <div class=\"card\">\n    <h2>Wochenvolumen gesamt</h2>\n    <div id=\"c-vol\"></div>\n  </div>\n</section>\n\n<!-- ============ DATEN ============ -->\n<section class=\"view\" id=\"v-data\">\n  <div class=\"card\">\n    <h2>Import (CSV / Excel)</h2>\n    <p class=\"hint\" style=\"margin:0 0 12px\">Renpho-Export (Gewicht), ein Food-Diary-Report (.xlsx — importiert Mahlzeiten) oder ein beliebiges CSV mit Datums- und Wert-Spalte. Wird automatisch erkannt.</p>\n    <input type=\"file\" id=\"csvFile\" accept=\".csv,.xlsx,.xls,text/csv,text/plain\">\n    <div id=\"csvMap\" style=\"display:none;margin-top:12px\">\n      <div class=\"row\" style=\"margin-bottom:8px\">\n        <div><label class=\"f\">Datum</label><select id=\"mapDate\"></select></div>\n        <div><label class=\"f\">Gewicht</label><select id=\"mapW\"></select></div>\n      </div>\n      <div class=\"row\">\n        <div><label class=\"f\">Kalorien</label><select id=\"mapK\"></select></div>\n        <div><label class=\"f\">Protein</label><select id=\"mapP\"></select></div>\n      </div>\n      <button id=\"csvGo\" style=\"width:100%;margin-top:12px\">Importieren</button>\n    </div>\n    <div id=\"csvInfo\" class=\"hint\"></div>\n  </div>\n\n  <div class=\"card\">\n    <h2>Sicherung</h2>\n    <div class=\"row\">\n      <button class=\"ghost\" id=\"expJson\">Backup laden</button>\n      <button class=\"ghost\" id=\"impJsonBtn\">Backup einspielen</button>\n    </div>\n    <input type=\"file\" id=\"impJson\" accept=\".json\" style=\"display:none\">\n    <button class=\"ghost\" id=\"expCsv\" style=\"width:100%;margin-top:8px\">Als CSV exportieren</button>\n    <p class=\"hint\">Alle Daten liegen ausschließlich auf diesem Gerät. Backup regelmäßig in die Dateien-App legen.</p>\n  </div>\n\n  <div class=\"card\">\n    <h2>n8n API</h2>\n    <label class=\"f\" for=\"n8nUrl\">Webhook-URL</label>\n    <input id=\"n8nUrl\" placeholder=\"https://dein-n8n.de/webhook/kalorien\">\n    <button class=\"ghost tiny\" id=\"n8nSave\" style=\"width:100%;margin-top:10px\">URL speichern</button>\n    <p class=\"hint\">Die App sendet POST {text, date} und erwartet als Antwort JSON {kcal, protein}. Im n8n-Webhook-Node unter CORS die Domain deiner App erlauben.</p>\n  </div>\n\n  <div class=\"card\">\n    <h2>Als App installieren</h2>\n    <p class=\"hint\" style=\"margin:0\">Safari öffnen → Teilen-Symbol → „Zum Home-Bildschirm\". Danach startet das Logbuch im Vollbild mit eigenem Icon und funktioniert offline.</p>\n  </div>\n\n  <div class=\"card\">\n    <h2>Zurücksetzen</h2>\n    <button class=\"ghost\" id=\"wipe\" style=\"width:100%;color:var(--signal);border-color:var(--signal)\">Alle Daten löschen</button>\n  </div>\n</section>\n\n</main>\n\n<nav><div class=\"inner\">\n  <button data-v=\"log\" aria-current=\"page\">Training</button>\n  <button data-v=\"plan\">Plan</button>\n  <button data-v=\"body\">Körper</button>\n  <button data-v=\"cal\">Kalender</button>\n  <button data-v=\"goals\">Ziele</button>\n  <button data-v=\"an\">Analyse</button>\n  <button data-v=\"data\">Daten</button>\n</div></nav>\n\n<div class=\"toast\" id=\"toast\"></div>\n\n";
+const MARKUP = "<header><div class=\"inner\">\n  <h1>Logbuch</h1>\n  <div class=\"head-right\"><select id=\"phaseSel\" class=\"phasesel\" aria-label=\"Phase\"><option value=\"maintain\">Maintain</option><option value=\"cut\">Cut</option><option value=\"bulk\">Bulk</option></select><button class=\"today\" id=\"today\" aria-label=\"Kalender\"></button></div>\n</div></header>\n\n<main class=\"wrap\">\n\n<!-- ============ TRAINING ============ -->\n<section class=\"view on\" id=\"v-log\">\n  <div class=\"card\">\n    <h2>Einheit starten</h2>\n    <div class=\"row\" style=\"margin-bottom:12px\">\n      <div style=\"flex:2\"><label class=\"f\" for=\"daySel\">Trainingstag</label><select id=\"daySel\"></select></div>\n      <div style=\"flex:1\"><label class=\"f\" for=\"wdate\">Datum</label><input type=\"date\" id=\"wdate\"></div>\n    </div>\n    <p class=\"hint\" id=\"dayHint\" style=\"margin:0\"></p>\n  </div>\n\n  <div id=\"blocks\"></div>\n\n  <div class=\"row\">\n    <button class=\"ghost\" id=\"addBlock\">＋ Übung hinzufügen</button>\n  </div>\n  <button id=\"saveW\" style=\"width:100%;margin-top:12px\">Einheit speichern</button>\n\n  <div class=\"card\">\n    <h2>Letzte Einheiten</h2>\n    <ul class=\"list\" id=\"wlist\"></ul>\n  </div>\n</section>\n\n<!-- ============ PLAN ============ -->\n<section class=\"view\" id=\"v-plan\">\n  <div class=\"card\">\n    <h2>Splits &amp; Trainingstage</h2>\n    <p class=\"hint\" style=\"margin:0 0 12px\">Lege einen Split an (z. B. Push / Pull / Legs), darin die Trainingstage mit ihren Übungen. Beim Loggen wird der Tag vorausgefüllt — Änderungen dort gelten nur für die eine Einheit, der Plan bleibt unberührt.</p>\n    <div id=\"splits\"></div>\n    <button class=\"ghost\" id=\"addSplit\" style=\"width:100%\">＋ Split anlegen</button>\n  </div>\n\n  <div class=\"card\">\n    <h2>Übungskatalog</h2>\n    <ul class=\"list\" id=\"exlist\"></ul>\n    <button class=\"ghost tiny\" id=\"addExCat\" style=\"width:100%;margin-top:10px\">＋ Übung anlegen</button>\n  </div>\n</section>\n\n<!-- ============ KÖRPER & ZIEL ============ -->\n<section class=\"view\" id=\"v-body\">\n\n  <div class=\"card\" id=\"nutriCard\">\n    <h2 style=\"display:flex;justify-content:space-between;align-items:center\">Tagesübersicht <button class=\"link\" id=\"nutriEdit\">Protein-Ziel</button></h2>\n    <div id=\"targetBox\"></div>\n    <div id=\"nutriBars\"></div>\n  </div>\n\n  <div class=\"readout\" id=\"bodyReadout\"></div>\n\n  <div class=\"card\">\n    <h2>Gewicht &amp; Kalorien</h2>\n    <div class=\"row\" style=\"margin-bottom:12px\">\n      <div><label class=\"f\" for=\"bdate\">Datum</label><input type=\"date\" id=\"bdate\"></div>\n    </div>\n    <div class=\"row\">\n      <div><label class=\"f\" for=\"bw\">Gewicht (kg)</label><input type=\"number\" id=\"bw\" step=\"0.1\" inputmode=\"decimal\" placeholder=\"78.4\"></div>\n      <div><label class=\"f\" for=\"kcal\">Kalorien</label><input type=\"number\" id=\"kcal\" step=\"10\" inputmode=\"numeric\" placeholder=\"2400\"></div>\n    </div>\n    <div class=\"row\" style=\"margin-top:12px\">\n      <div><label class=\"f\" for=\"prot\">Protein (g)</label><input type=\"number\" id=\"prot\" step=\"1\" inputmode=\"numeric\" placeholder=\"160\"></div>\n      <div><label class=\"f\" for=\"steps\">Schritte</label><input type=\"number\" id=\"steps\" step=\"100\" inputmode=\"numeric\" placeholder=\"9000\"></div>\n    </div>\n    <button id=\"saveB\" style=\"width:100%;margin-top:12px\">Eintrag speichern</button>\n    <p class=\"hint\">Nur ausgefüllte Felder werden überschrieben. Ein Tag = ein Eintrag.</p>\n  </div>\n\n  <div class=\"card\">\n    <h2>Mahlzeiten</h2>\n    <div class=\"pickchips\" id=\"mealChips\" style=\"margin-bottom:10px\"></div>\n    <div class=\"row\" style=\"margin-bottom:12px\">\n      <button class=\"ghost\" id=\"prodSearchBtn\">🔍 Produkt suchen</button>\n      <button class=\"ghost\" id=\"barcodeBtn\" style=\"flex:0 0 auto\">▣ Barcode</button>\n    </div>\n    <label class=\"f\" for=\"foodTxt\">oder frei eintragen</label>\n    <input id=\"foodTxt\" placeholder=\"z. B. 200 g Reis, 150 g Hähnchenbrust\">\n    <div class=\"row\" style=\"margin-top:10px\">\n      <div><label class=\"f\" for=\"mealKcal\">kcal</label><input type=\"number\" id=\"mealKcal\" inputmode=\"numeric\" placeholder=\"auto\"></div>\n      <div><label class=\"f\" for=\"mealProt\">Protein g</label><input type=\"number\" id=\"mealProt\" inputmode=\"numeric\" placeholder=\"auto\"></div>\n    </div>\n    <div class=\"row\" style=\"margin-top:10px\">\n      <div><label class=\"f\" for=\"mealFat\">Fett g</label><input type=\"number\" id=\"mealFat\" inputmode=\"numeric\" placeholder=\"optional\"></div>\n      <div><label class=\"f\" for=\"mealCarb\">Kohlenhydrate g</label><input type=\"number\" id=\"mealCarb\" inputmode=\"numeric\" placeholder=\"optional\"></div>\n    </div>\n    <button class=\"ghost\" id=\"foodGo\" style=\"width:100%;margin-top:10px\">Mahlzeit eintragen</button>\n    <p class=\"hint\" id=\"foodInfo\">Am einfachsten „Produkt suchen“ oder „Barcode“ nutzen (Open Food Facts) — Fett &amp; Kohlenhydrate kommen dann automatisch mit. Frei eintragen: Werte selbst angeben — ohne kcal fragt die App deinen n8n-Webhook (falls im Daten-Tab hinterlegt).</p>\n    <ul class=\"list\" id=\"mealList\" style=\"margin-top:10px\"></ul>\n  </div>\n\n  <div class=\"card\">\n    <h2>Verlauf</h2>\n    <ul class=\"list\" id=\"blist\"></ul>\n    <button class=\"ghost tiny\" id=\"blistMore\" style=\"width:100%;margin-top:10px;display:none\">Mehr anzeigen</button>\n  </div>\n\n  <div class=\"card\">\n    <h2 style=\"display:flex;justify-content:space-between;align-items:center\">Wochenziele <button class=\"link\" id=\"goalEdit\">anpassen</button></h2>\n    <p class=\"hint\" style=\"margin:0 0 12px\">Rollierend über die letzten 7 Tage.</p>\n    <div id=\"goals\"></div>\n  </div>\n\n</section>\n\n<!-- ============ ANALYSE ============ -->\n<section class=\"view\" id=\"v-an\">\n  <div class=\"card\">\n    <h2>Zeitraum</h2>\n    <div class=\"pickchips\" id=\"anPeriod\"></div>\n    <div class=\"row\" id=\"anCustom\" style=\"display:none;margin:6px 0 0\">\n      <div><label class=\"f\">Von</label><input type=\"date\" id=\"anFrom\"></div>\n      <div><label class=\"f\">Bis</label><input type=\"date\" id=\"anTo\"></div>\n    </div>\n    <div style=\"margin-top:12px\"><label class=\"f\" for=\"anAvg\">Ø-Fenster (Tage) — Glättung &amp; Vergleich</label><input type=\"number\" id=\"anAvg\" min=\"1\" max=\"90\" step=\"1\" inputmode=\"numeric\"></div>\n  </div>\n\n  <div class=\"card\">\n    <h2>Gewicht &amp; Energie</h2>\n    <div id=\"c-weight\"></div>\n    <div class=\"legend\">\n      <span><i style=\"background:var(--ink-30)\"></i>Rohwert</span>\n      <span><i style=\"background:var(--blue)\"></i>7-Tage-Schnitt</span>\n      <span><i style=\"background:var(--teal)\"></i>kcal (7-Tage-Schnitt)</span>\n    </div>\n    <div class=\"stats\" style=\"margin-top:14px\" id=\"bodyStats\"></div>\n  </div>\n\n  <div class=\"card\">\n    <h2>Kraftverlauf</h2>\n    <label class=\"f\">Übung</label>\n    <button class=\"ghost expick\" id=\"anExBtn\" style=\"width:100%;margin-bottom:14px\"></button>\n    <div id=\"c-str\"></div>\n    <div class=\"legend\">\n      <span><i style=\"background:var(--ink)\"></i>e1RM (kg)</span>\n      <span><i style=\"background:var(--ochre)\"></i>Volumen pro Einheit (kg)</span>\n    </div>\n    <div class=\"stats\" style=\"margin-top:14px\" id=\"exStats\"></div>\n  </div>\n\n  <div class=\"card\">\n    <h2>Kraft vs. Körpergewicht</h2>\n    <p class=\"hint\" style=\"margin:0 0 12px\">Beides auf den ersten Wert normiert (= 100). Divergieren die Linien, verlierst du Gewicht ohne Kraft — oder umgekehrt.</p>\n    <div id=\"c-rel\"></div>\n    <div class=\"legend\">\n      <span><i style=\"background:var(--blue)\"></i>Körpergewicht</span>\n      <span><i style=\"background:var(--ink)\"></i>e1RM</span>\n      <span><i style=\"background:var(--signal)\"></i>Relative Kraft</span>\n    </div>\n    <div class=\"stats\" style=\"margin-top:14px\" id=\"relStats\"></div>\n  </div>\n\n  <div class=\"card\">\n    <h2>Wochenvolumen gesamt</h2>\n    <div id=\"c-vol\"></div>\n  </div>\n</section>\n\n<!-- ============ DATEN ============ -->\n<section class=\"view\" id=\"v-data\">\n  <div class=\"card\">\n    <h2>Import (CSV / Excel)</h2>\n    <p class=\"hint\" style=\"margin:0 0 12px\">Renpho-Export (Gewicht), ein Food-Diary-Report (.xlsx — importiert Mahlzeiten) oder ein beliebiges CSV mit Datums- und Wert-Spalte. Wird automatisch erkannt.</p>\n    <input type=\"file\" id=\"csvFile\" accept=\".csv,.xlsx,.xls,text/csv,text/plain\">\n    <div id=\"csvMap\" style=\"display:none;margin-top:12px\">\n      <div class=\"row\" style=\"margin-bottom:8px\">\n        <div><label class=\"f\">Datum</label><select id=\"mapDate\"></select></div>\n        <div><label class=\"f\">Gewicht</label><select id=\"mapW\"></select></div>\n      </div>\n      <div class=\"row\">\n        <div><label class=\"f\">Kalorien</label><select id=\"mapK\"></select></div>\n        <div><label class=\"f\">Protein</label><select id=\"mapP\"></select></div>\n      </div>\n      <button id=\"csvGo\" style=\"width:100%;margin-top:12px\">Importieren</button>\n    </div>\n    <div id=\"csvInfo\" class=\"hint\"></div>\n  </div>\n\n  <div class=\"card\">\n    <h2>Sicherung</h2>\n    <div class=\"row\">\n      <button class=\"ghost\" id=\"expJson\">Backup laden</button>\n      <button class=\"ghost\" id=\"impJsonBtn\">Backup einspielen</button>\n    </div>\n    <input type=\"file\" id=\"impJson\" accept=\".json\" style=\"display:none\">\n    <button class=\"ghost\" id=\"expCsv\" style=\"width:100%;margin-top:8px\">Als CSV exportieren</button>\n    <p class=\"hint\">Alle Daten liegen ausschließlich auf diesem Gerät. Backup regelmäßig in die Dateien-App legen.</p>\n  </div>\n\n  <div class=\"card\">\n    <h2>n8n API</h2>\n    <label class=\"f\" for=\"n8nUrl\">Webhook-URL</label>\n    <input id=\"n8nUrl\" placeholder=\"https://dein-n8n.de/webhook/kalorien\">\n    <button class=\"ghost tiny\" id=\"n8nSave\" style=\"width:100%;margin-top:10px\">URL speichern</button>\n    <p class=\"hint\">Die App sendet POST {text, date} und erwartet als Antwort JSON {kcal, protein}. Im n8n-Webhook-Node unter CORS die Domain deiner App erlauben.</p>\n  </div>\n\n  <div class=\"card\">\n    <h2>Als App installieren</h2>\n    <p class=\"hint\" style=\"margin:0\">Safari öffnen → Teilen-Symbol → „Zum Home-Bildschirm\". Danach startet das Logbuch im Vollbild mit eigenem Icon und funktioniert offline.</p>\n  </div>\n\n  <div class=\"card\">\n    <h2>Zurücksetzen</h2>\n    <button class=\"ghost\" id=\"wipe\" style=\"width:100%;color:var(--signal);border-color:var(--signal)\">Alle Daten löschen</button>\n  </div>\n</section>\n\n</main>\n\n<nav><div class=\"inner\">\n  <button data-v=\"log\" aria-current=\"page\">Training</button>\n  <button data-v=\"plan\">Plan</button>\n  <button data-v=\"body\">Körper</button>\n  <button data-v=\"an\">Analyse</button>\n  <button data-v=\"data\">Daten</button>\n</div></nav>\n\n<div class=\"toast\" id=\"toast\"></div>\n\n";
 const EXTRA_CSS = `
 .pickov{position:fixed;inset:0;z-index:60;background:rgba(15,23,32,.45);display:flex;align-items:flex-end;justify-content:center}
 .picksheet{background:var(--card);border:1px solid var(--line);border-radius:16px 16px 0 0;width:100%;max-width:580px;max-height:78vh;display:flex;flex-direction:column;padding:14px 16px calc(14px + env(safe-area-inset-bottom))}
@@ -34,6 +34,24 @@ const EXTRA_CSS = `
 .scanvid{width:100%;height:100%;object-fit:cover}
 .prodcalc{font-family:var(--mono);font-size:15px}
 .prodcalc b{font-size:20px}
+.head-right{display:flex;align-items:center;gap:8px}
+.phasesel{width:auto;padding:6px 8px;font:600 12px/1 var(--sans);border-radius:99px;background:var(--field);border:1px solid var(--line);color:var(--ink);min-height:34px}
+button.today{background:none;border:1px solid var(--line);border-radius:99px;padding:7px 11px;min-height:34px;font-family:var(--mono);font-size:12px;color:var(--ink-60);letter-spacing:.02em;font-weight:600;cursor:pointer}
+button.today::before{content:"📅 "}
+button.today:active{transform:none}
+.calov .picksheet{max-height:88vh;overflow-y:auto}
+.targetline{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
+.targetline .big{font-family:var(--mono);font-size:30px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.targetline .big span{font-size:13px;color:var(--ink-30)}
+.targetline .lab{font:550 10px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-30);margin-bottom:7px}
+.targetmeta{font-family:var(--mono);font-size:11.5px;color:var(--ink-60);text-align:right;max-width:52%}
+.seg{display:flex;border:1px solid var(--line);border-radius:99px;overflow:hidden;margin-bottom:10px}
+.seg button{flex:1;background:var(--field);border:0;border-radius:0;color:var(--ink-60);padding:9px 0;font:600 12px/1 var(--sans);min-height:40px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.lvlrow{margin-bottom:10px}
+.manualrow{display:flex;gap:8px;align-items:flex-end;margin-bottom:6px}
+nav button{min-height:46px}
+.block-head .rm,.setrow .del{min-width:44px}
 `;
 class LogbuchApp extends HTMLElement{
   connectedCallback(){
@@ -721,13 +739,16 @@ function renderBody(){
     </div>` : `<div><div class="lab">7-Tage-Schnitt</div><div class="big">—<span> kg</span></div></div>
       <div class="side"><div>Trag dein erstes Gewicht ein</div></div>`;
 
-  $('#blist').innerHTML = b.slice().reverse().slice(0,30).map(x=>`<li>
+  const _rev = b.slice().reverse();
+  $('#blist').innerHTML = _rev.slice(0,blistLimit).map(x=>`<li>
     <div class="li-main">
       <div class="li-t">${x.weight!=null?round(x.weight,1).toFixed(1)+' kg':'— kg'}</div>
-      <div class="li-s">${[x.kcal!=null?x.kcal+' kcal':null, x.protein!=null?x.protein+' g P':null, x.steps!=null?x.steps+' Schritte':null].filter(Boolean).join(' · ')||'nur Gewicht'}</div>
+      <div class="li-s">${[x.kcal!=null?x.kcal+' kcal':null, x.protein!=null?x.protein+' g P':null, x.fat!=null?x.fat+' g F':null, x.carbs!=null?x.carbs+' g KH':null, x.steps!=null?x.steps+' Schritte':null].filter(Boolean).join(' · ')||'nur Gewicht'}</div>
     </div>
     <div class="li-d">${fmtDate(x.date)}<br><button class="link warn" data-bdel="${x.date}">löschen</button></div>
   </li>`).join('') || '<div class="empty">Noch keine Einträge</div>';
+  const _more=$('#blistMore');
+  if(_more){ if(_rev.length>5){ _more.style.display=''; _more.textContent = blistLimit>=10 ? 'Weniger anzeigen' : 'Mehr anzeigen'; } else { _more.style.display='none'; } }
   $$('#blist [data-bdel]').forEach(btn=>btn.onclick=async()=>{
     db.body = db.body.filter(x=>x.date!==btn.dataset.bdel);
     await Store.save(db); renderAll(); toast('Gelöscht');
@@ -775,17 +796,19 @@ function renderMeals(){
   const d = $('#bdate').value||TODAY;
   const e = db.body.find(x=>x.date===d);
   const meals = (e&&e.meals)||[];
-  const sum = meals.reduce((a,m)=>({k:a.k+(m.kcal||0), p:a.p+(m.protein||0)}), {k:0,p:0});
+  const sum = meals.reduce((a,m)=>({k:a.k+(m.kcal||0), p:a.p+(m.protein||0), f:a.f+(m.fat||0), c:a.c+(m.carbs||0)}), {k:0,p:0,f:0,c:0});
   $('#mealList').innerHTML = meals.length ? meals.map(m=>`<li>
     <div class="li-main"><div class="li-t">${esc(m.name||'Mahlzeit')}</div>
-    <div class="li-s">${m.text?esc(m.text)+' — ':''}${Math.round(m.kcal||0)} kcal · ${Math.round(m.protein||0)} g P</div></div>
+    <div class="li-s">${m.text?esc(m.text)+' — ':''}${Math.round(m.kcal||0)} kcal · ${Math.round(m.protein||0)} g P${m.fat!=null?' · '+Math.round(m.fat)+' g F':''}${m.carbs!=null?' · '+Math.round(m.carbs)+' g KH':''}</div></div>
     <div class="li-d">${m.k100!=null?`<button class="link" data-medit="${m.id}">Menge</button><br>`:''}<button class="link warn" data-mdel="${m.id}">löschen</button></div></li>`).join('')
-    + `<li><div class="li-main"><div class="li-t">Summe ${fmtDate(d)}</div></div><div class="li-d" style="font-size:12px">${Math.round(sum.k)} kcal · ${Math.round(sum.p)} g P</div></li>` : '';
+    + `<li><div class="li-main"><div class="li-t">Summe ${fmtDate(d)}</div></div><div class="li-d" style="font-size:12px">${Math.round(sum.k)} kcal · ${Math.round(sum.p)} g P · ${Math.round(sum.f)} g F · ${Math.round(sum.c)} g KH</div></li>` : '';
   $$('#mealList [data-mdel]').forEach(b=>b.onclick=async()=>{
     const m = meals.find(x=>x.id===b.dataset.mdel);
     if(!m) return;
     e.kcal = Math.max(0, Math.round((e.kcal||0) - (m.kcal||0)));
     e.protein = Math.max(0, Math.round((e.protein||0) - (m.protein||0)));
+    if(m.fat!=null) e.fat = Math.max(0, Math.round((e.fat||0) - m.fat));
+    if(m.carbs!=null) e.carbs = Math.max(0, Math.round((e.carbs||0) - m.carbs));
     e.meals = e.meals.filter(x=>x.id!==m.id);
     await Store.save(db); renderAll(); toast('Mahlzeit entfernt');
   });
@@ -796,9 +819,12 @@ function renderMeals(){
     if(inp===null) return;
     const g = num(inp); if(g==null || g<0) return;
     const nk = Math.round((m.k100||0)*g/100), np = Math.round((m.p100||0)*g/100);
+    const nf = m.f100!=null?Math.round((m.f100||0)*g/100):null, nc = m.c100!=null?Math.round((m.c100||0)*g/100):null;
     e.kcal = Math.max(0, Math.round((e.kcal||0) - (m.kcal||0) + nk));
     e.protein = Math.max(0, Math.round((e.protein||0) - (m.protein||0) + np));
-    m.kcal = nk; m.protein = np; m.g = g;
+    if(m.fat!=null && nf!=null) e.fat = Math.max(0, Math.round((e.fat||0) - m.fat + nf));
+    if(m.carbs!=null && nc!=null) e.carbs = Math.max(0, Math.round((e.carbs||0) - m.carbs + nc));
+    m.kcal = nk; m.protein = np; if(nf!=null) m.fat = nf; if(nc!=null) m.carbs = nc; m.g = g;
     if(m.pname) m.text = `${m.pname} — ${g} g`;
     else if(m.text) m.text = m.text.replace(/—\s*[\d.,]+\s*g/, '— '+g+' g');
     await Store.save(db); renderAll(); toast('Menge geändert');
@@ -808,7 +834,7 @@ $('#bdate').addEventListener('change', ()=>{ renderMeals(); renderNutri(); });
 $('#foodGo').onclick = async ()=>{
   const date = $('#bdate').value||TODAY;
   const text = $('#foodTxt').value.trim();
-  let kc = num($('#mealKcal').value), pr = num($('#mealProt').value);
+  let kc = num($('#mealKcal').value), pr = num($('#mealProt').value), ft = num($('#mealFat').value), cb = num($('#mealCarb').value);
   if(!text && kc==null) return toast('Essen eingeben oder kcal angeben');
   const btn = $('#foodGo');
   if(kc==null){
@@ -824,6 +850,8 @@ $('#foodGo').onclick = async ()=>{
       const d = await r.json();
       kc = num(d.kcal);
       if(pr==null) pr = num(d.protein);
+      if(ft==null) ft = num(d.fat);
+      if(cb==null) cb = num(d.carbs);
       if(kc==null) throw new Error('Antwort enthält kein kcal');
     }catch(err){
       btn.disabled = false; btn.textContent = 'Mahlzeit eintragen';
@@ -835,8 +863,10 @@ $('#foodGo').onclick = async ()=>{
   if(!e){ e={date}; db.body.push(e); }
   e.kcal = Math.round((e.kcal||0) + (kc||0));
   if(pr!=null) e.protein = Math.round((e.protein||0) + pr);
-  (e.meals = e.meals||[]).push({id:uid(), name:curMeal, text, kcal:Math.round(kc||0), protein:Math.round(pr||0)});
-  $('#foodTxt').value=''; $('#mealKcal').value=''; $('#mealProt').value='';
+  if(ft!=null) e.fat = Math.round((e.fat||0) + ft);
+  if(cb!=null) e.carbs = Math.round((e.carbs||0) + cb);
+  (e.meals = e.meals||[]).push({id:uid(), name:curMeal, text, kcal:Math.round(kc||0), protein:Math.round(pr||0), fat:ft!=null?Math.round(ft):null, carbs:cb!=null?Math.round(cb):null});
+  $('#foodTxt').value=''; $('#mealKcal').value=''; $('#mealProt').value=''; $('#mealFat').value=''; $('#mealCarb').value='';
   await Store.save(db);
   renderAll();
   toast(`${curMeal}: ${Math.round(kc||0)} kcal${pr!=null?' · '+Math.round(pr)+' g Protein':''} — ${fmtDate(date)}`);
@@ -849,7 +879,9 @@ function mapProd(p){
   const kc=num(n['energy-kcal_100g']);
   if(kc==null) return null;
   const pr=num(n['proteins_100g']);
-  return {code:p.code, name:(p.product_name||'Unbenannt').trim(), brand:(p.brands||'').split(',')[0].trim(), kc100:kc, pr100:pr!=null?pr:0, qty:(p.quantity||'').trim(), serving:num(p.serving_quantity)||0};
+  const ft=num(n['fat_100g']);
+  const cb=num(n['carbohydrates_100g']);
+  return {code:p.code, name:(p.product_name||'Unbenannt').trim(), brand:(p.brands||'').split(',')[0].trim(), kc100:kc, pr100:pr!=null?pr:0, ft100:ft!=null?ft:0, cb100:cb!=null?cb:0, qty:(p.quantity||'').trim(), serving:num(p.serving_quantity)||0};
 }
 // OFF-Server liefern pro Anfrage zufällig mal keinen CORS-Header → "Failed to fetch".
 // Deshalb mehrfach wiederholen; ein neuer Versuch trifft meist einen funktionierenden Server.
@@ -882,20 +914,24 @@ async function offBarcode(code){
 }
 
 async function addFoodMeal(text, kc, pr, meta){
+  meta = meta||{};
+  const ft = meta.fat, cb = meta.carbs;
   const date=$('#bdate').value||TODAY;
   let e=db.body.find(x=>x.date===date); if(!e){ e={date}; db.body.push(e); }
   e.meals=e.meals||[];
   e.kcal=Math.round((e.kcal||0)+(kc||0));
   if(pr!=null) e.protein=Math.round((e.protein||0)+pr);
-  const m={id:uid(), name:curMeal, text, kcal:Math.round(kc||0), protein:Math.round(pr||0)};
-  if(meta){ m.k100=meta.k100; m.p100=meta.p100; m.g=meta.g; m.pname=meta.pname; }
+  if(ft!=null) e.fat=Math.round((e.fat||0)+ft);
+  if(cb!=null) e.carbs=Math.round((e.carbs||0)+cb);
+  const m={id:uid(), name:curMeal, text, kcal:Math.round(kc||0), protein:Math.round(pr||0), fat:ft!=null?Math.round(ft):null, carbs:cb!=null?Math.round(cb):null};
+  m.k100=meta.k100; m.p100=meta.p100; m.f100=meta.f100; m.c100=meta.c100; m.g=meta.g; m.pname=meta.pname;
   e.meals.push(m);
   await Store.save(db); renderAll();
   toast(`${curMeal}: ${Math.round(kc||0)} kcal · ${Math.round(pr||0)} g P`);
 }
 function pushFav(p){
   db.foodFav=(db.foodFav||[]).filter(f=>!(f.name===p.name && f.brand===p.brand));
-  db.foodFav.unshift({code:p.code,name:p.name,brand:p.brand,kc100:p.kc100,pr100:p.pr100,qty:p.qty||'',serving:p.serving||0});
+  db.foodFav.unshift({code:p.code,name:p.name,brand:p.brand,kc100:p.kc100,pr100:p.pr100,ft100:p.ft100||0,cb100:p.cb100||0,qty:p.qty||'',serving:p.serving||0});
   db.foodFav=db.foodFav.slice(0,24);
 }
 function showFavs(){
@@ -967,18 +1003,18 @@ function showProdDetail(p){
   det.innerHTML=`
     <button class="link prodback">← zurück</button>
     <div class="li-t" style="font-size:16px;margin:6px 0 2px">${esc(p.name)}</div>
-    <div class="li-s">${p.brand?esc(p.brand)+' · ':''}${Math.round(p.kc100)} kcal · ${round(p.pr100,1)} g Protein / 100 g</div>
+    <div class="li-s">${p.brand?esc(p.brand)+' · ':''}${Math.round(p.kc100)} kcal · ${round(p.pr100,1)} g P · ${round(p.ft100||0,1)} g F · ${round(p.cb100||0,1)} g KH / 100 g</div>
     <label class="f" style="margin-top:16px">Menge (g / ml)</label>
     <input type="number" class="prodg" inputmode="numeric" value="${p.serving>0?Math.round(p.serving):100}">
     <div class="pickchips prodport" style="margin-top:8px">${presets.map(([g,l])=>`<button class="chip" data-g="${g}">${l}</button>`).join('')}</div>
     <div class="prodcalc" style="margin:14px 0"></div>
     <button class="prodadd" style="width:100%">Zu ${esc(curMeal)} hinzufügen</button>`;
   const g=det.querySelector('.prodg'), calc=det.querySelector('.prodcalc');
-  function upd(){ const grams=num(g.value)||0; const kc=p.kc100*grams/100, pr=p.pr100*grams/100; calc.innerHTML=`<b>${Math.round(kc)} kcal</b> · ${round(pr,1)} g Protein`; return {kc,pr,grams}; }
+  function upd(){ const grams=num(g.value)||0; const kc=p.kc100*grams/100, pr=p.pr100*grams/100, ft=(p.ft100||0)*grams/100, cb=(p.cb100||0)*grams/100; calc.innerHTML=`<b>${Math.round(kc)} kcal</b> · ${round(pr,1)} g P · ${round(ft,1)} g F · ${round(cb,1)} g KH`; return {kc,pr,ft,cb,grams}; }
   g.oninput=upd; upd();
   det.querySelectorAll('.prodport .chip').forEach(b=>b.onclick=()=>{ g.value=b.dataset.g; upd(); });
   det.querySelector('.prodback').onclick=()=>{ det.style.display='none'; foodOv.querySelector('.prodlist').style.display='block'; foodOv.querySelector('.foodhead').style.display='flex'; };
-  det.querySelector('.prodadd').onclick=async()=>{ const {kc,pr,grams}=upd(); const text=`${p.name}${p.brand?' ('+p.brand+')':''} — ${Math.round(grams)} g`; pushFav(p); await addFoodMeal(text, kc, pr, {k100:p.kc100, p100:p.pr100, g:Math.round(grams), pname:p.name+(p.brand?' ('+p.brand+')':'')}); closeFood(); };
+  det.querySelector('.prodadd').onclick=async()=>{ const {kc,pr,ft,cb,grams}=upd(); const text=`${p.name}${p.brand?' ('+p.brand+')':''} — ${Math.round(grams)} g`; pushFav(p); await addFoodMeal(text, kc, pr, {k100:p.kc100, p100:p.pr100, f100:p.ft100||0, c100:p.cb100||0, fat:ft, carbs:cb, g:Math.round(grams), pname:p.name+(p.brand?' ('+p.brand+')':'')}); closeFood(); };
 }
 
 /* ---- Barcode-Scanner ---- */
@@ -1448,6 +1484,41 @@ $('#wipe').onclick = async ()=>{
 /* ---------------- Kalender ---------------- */
 let calYM = (()=>{ const d=new Date(); return {y:d.getFullYear(), m:d.getMonth()}; })();
 let calSel = TODAY;
+let blistLimit = 5;
+
+/* ---- Kalender-Overlay (öffnet über das Datum oben rechts) ---- */
+const calOv=document.createElement('div'); calOv.className='pickov calov'; calOv.style.display='none';
+calOv.innerHTML=`<div class="picksheet">
+  <div class="cal-head">
+    <button class="ghost tiny" id="calPrev" aria-label="Voriger Monat">←</button>
+    <div class="t" id="calTitle"></div>
+    <button class="ghost tiny" id="calNext" aria-label="Nächster Monat">→</button>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+  <div class="legend">
+    <span><i style="background:var(--blue);width:6px;height:6px;border-radius:50%"></i>Training</span>
+    <span><i style="background:var(--signal);width:6px;height:6px;border-radius:50%"></i>Gewicht</span>
+    <span><i style="background:var(--teal);width:6px;height:6px;border-radius:50%"></i>Essen</span>
+  </div>
+  <div style="border-top:1px solid var(--grid);margin-top:12px;padding-top:12px">
+    <div class="cal-sec-t" id="calDayTitle"></div>
+    <div id="calDayBody"></div>
+  </div>
+  <button class="link calclose" style="margin-top:12px;text-align:center;width:100%">Schließen</button>
+</div>`;
+root.appendChild(calOv);
+calOv.querySelector('.calclose').onclick=()=>{ calOv.style.display='none'; };
+calOv.addEventListener('click',e=>{ if(e.target===calOv) calOv.style.display='none'; });
+function openCal(){ const d=new Date(calSel+'T12:00:00'); calYM={y:d.getFullYear(),m:d.getMonth()}; calOv.style.display='flex'; renderCal(); }
+
+/* ---- Header-Controls & Verlauf-Toggle ---- */
+const _today=$('#today'); if(_today) _today.onclick=openCal;
+const _phaseSel=$('#phaseSel');
+if(_phaseSel) _phaseSel.onchange=async()=>{ db.nutrition.phase=_phaseSel.value; await Store.save(db); renderNutri(); renderGoals(); toast('Phase: '+_phaseSel.options[_phaseSel.selectedIndex].text); };
+const _nutriEdit=$('#nutriEdit');
+if(_nutriEdit) _nutriEdit.onclick=async()=>{ const p=prompt('Protein-Ziel (g/Tag)', db.goals.proteinTarget||''); if(p===null) return; const pn=parseInt(p,10); if(isFinite(pn)&&pn>=0) db.goals.proteinTarget=pn; await Store.save(db); renderNutri(); toast('Protein-Ziel gesetzt'); };
+const _blistMore=$('#blistMore'); if(_blistMore) _blistMore.onclick=()=>{ blistLimit = blistLimit>=10 ? 5 : 10; renderBody(); };
+
 function calData(){
   const map = {};
   for(const w of db.workouts){
@@ -1555,7 +1626,7 @@ function renderAll(){
   fillDaySel();
   fillAnEx();
   renderWList(); renderPlan(); renderBody(); renderAnalysis(); renderExList(); renderCal();
-  renderMealChips(); renderMeals(); renderNutri();
+  renderMealChips(); renderMeals(); renderNutri(); renderGoals();
 }
 
 /* ---------------- PWA & Tagesziele ---------------- */
@@ -1578,35 +1649,70 @@ function setupPWA(){
   }catch(e){}
   try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
   try{ if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{}); }catch(e){}
-  if(!$('#nutriCard')){
-    const c=document.createElement('div'); c.className='card'; c.id='nutriCard';
-    c.innerHTML='<h2 style="display:flex;justify-content:space-between;align-items:center">Tagesziel <button class="link" id="nutriEdit">anpassen</button></h2><div id="nutriBars"></div>';
-    const body=$('#v-body'); body.insertBefore(c, body.firstChild);
-    $('#nutriEdit').onclick=async()=>{
-      const k=prompt('Tagesziel Kalorien (kcal)', db.goals.kcalTarget||'');
-      if(k===null) return;
-      const p=prompt('Tagesziel Protein (g)', db.goals.proteinTarget||'');
-      if(p===null) return;
-      const kn=parseInt(k,10), pn=parseInt(p,10);
-      if(isFinite(kn)&&kn>=0) db.goals.kcalTarget=kn;
-      if(isFinite(pn)&&pn>=0) db.goals.proteinTarget=pn;
-      await Store.save(db); renderNutri(); toast('Tagesziel gespeichert');
-    };
+
+}
+// Macro-Ziele aus dem (phasenabhängigen) Kalorienziel ableiten.
+function macroTargets(){
+  const t=calorieTarget();
+  const kcal=t.kcal;
+  const pt=(db.goals&&db.goals.proteinTarget)||0;
+  let fat=null, carb=null;
+  if(kcal!=null){
+    fat=Math.round(kcal*0.25/9);
+    carb=Math.max(0, Math.round((kcal - pt*4 - fat*9)/4));
   }
+  return {kcal, protein:pt||null, fat, carb, info:t};
 }
 function renderNutri(){
   const host=$('#nutriBars'); if(!host) return;
+  const n=db.nutrition||DEFAULT_NUTRITION;
+  const ps=$('#phaseSel'); if(ps) ps.value=n.phase;
+  const tg=macroTargets();
   const d=$('#bdate').value||TODAY;
   const e=db.body.find(x=>x.date===d)||{};
-  const kc=Math.round(e.kcal||0), pr=Math.round(e.protein||0);
-  const kt=db.goals.kcalTarget||0, pt=db.goals.proteinTarget||0;
+  const kc=Math.round(e.kcal||0), pr=Math.round(e.protein||0), ft=Math.round(e.fat||0), cb=Math.round(e.carbs||0);
+
+  const box=$('#targetBox');
+  if(box){
+    const phaseLabel={maintain:'Maintain (Recomp)',cut:'Cut',bulk:'Bulk'}[n.phase]||n.phase;
+    let targetStr, metaStr;
+    if(n.mode==='manual'){
+      targetStr=(n.manualKcal!=null?n.manualKcal:(db.goals.kcalTarget||'—')); metaStr='manuell gesetzt';
+    } else if(tg.kcal==null){
+      targetStr='—'; metaStr=tg.info.reason||'zu wenig Daten';
+    } else {
+      const dl=phaseDelta();
+      targetStr=tg.kcal; metaStr=phaseLabel+(tg.info.maint?' · Erhalt ~'+tg.info.maint:'')+(dl?' · '+(dl>0?'+':'')+dl+' kcal':'');
+    }
+    let lvl='';
+    if(n.mode==='auto' && n.phase==='cut'){
+      lvl='<div class="lvlrow"><label class="f">Defizit-Stufe</label><select id="lvlSel">'+CUT_LEVELS.map(l=>'<option value="'+l.id+'"'+(l.id===n.cutLevel?' selected':'')+'>'+l.label+' ('+l.delta+' kcal · '+l.prog+')</option>').join('')+'</select></div>';
+    } else if(n.mode==='auto' && n.phase==='bulk'){
+      lvl='<div class="lvlrow"><label class="f">Überschuss-Stufe</label><select id="lvlSel">'+BULK_LEVELS.map(l=>'<option value="'+l.id+'"'+(l.id===n.bulkLevel?' selected':'')+'>'+l.label+' (+'+l.delta+' kcal · '+l.prog+')</option>').join('')+'</select></div>';
+    }
+    const manual = n.mode==='manual'
+      ? '<div class="manualrow"><div style="flex:1"><label class="f" for="manKcal">Ziel kcal</label><input type="number" id="manKcal" inputmode="numeric" value="'+(n.manualKcal!=null?n.manualKcal:'')+'" placeholder="'+(db.goals.kcalTarget||2200)+'"></div><button class="ghost tiny" id="manSave" style="flex:0 0 auto">Setzen</button></div>'
+      : '';
+    box.innerHTML=
+      '<div class="targetline"><div><div class="lab">Kalorienziel</div><div class="big">'+targetStr+'<span> kcal</span></div></div><div class="targetmeta">'+metaStr+'</div></div>'
+      +'<div class="seg"><button data-mode="auto" aria-pressed="'+(n.mode!=='manual')+'">Automatische Analyse</button><button data-mode="manual" aria-pressed="'+(n.mode==='manual')+'">Manuell</button></div>'
+      +lvl+manual;
+    box.querySelectorAll('.seg button').forEach(bt=>bt.onclick=async()=>{ db.nutrition.mode=bt.dataset.mode; await Store.save(db); renderNutri(); renderGoals(); });
+    const ls=box.querySelector('#lvlSel'); if(ls) ls.onchange=async()=>{ if(n.phase==='cut') db.nutrition.cutLevel=ls.value; else db.nutrition.bulkLevel=ls.value; await Store.save(db); renderNutri(); renderGoals(); };
+    const ms=box.querySelector('#manSave'); if(ms) ms.onclick=async()=>{ const v=num(box.querySelector('#manKcal').value); db.nutrition.manualKcal=(v!=null?Math.round(v):null); await Store.save(db); renderNutri(); renderGoals(); toast('Manuelles Ziel gesetzt'); };
+  }
+
   const bar=(label,cur,target,unit)=>{
     const pct=target>0?Math.min(100,Math.round(cur/target*100)):0;
     const over=target>0&&cur>target;
     const rest=target>0?Math.max(0,target-cur):0;
-    return '<div class="goal"><div class="goal-top"><div class="goal-t">'+label+'</div><div class="goal-v"><b>'+cur+'</b> / '+(target||'—')+' '+unit+'</div></div><div class="goal-bar"><i style="width:'+pct+'%;background:'+(over?'var(--signal)':'var(--accent)')+'"></i></div><div class="goal-sub">'+(target>0?(over?'+'+(cur-target)+' '+unit+' über Ziel':rest+' '+unit+' übrig'):'kein Ziel gesetzt')+'</div></div>';
+    return '<div class="goal"><div class="goal-top"><div class="goal-t">'+label+'</div><div class="goal-v"><b>'+cur+'</b> / '+(target||'—')+' '+unit+'</div></div><div class="goal-bar"><i style="width:'+pct+'%;background:'+(over?'var(--signal)':'var(--accent)')+'"></i></div><div class="goal-sub">'+(target>0?(over?'+'+(cur-target)+' '+unit+' über Ziel':rest+' '+unit+' übrig'):'kein Ziel')+'</div></div>';
   };
-  host.innerHTML='<div class="goal-sub" style="margin:-2px 0 12px">'+fmtDate(d)+'</div>'+bar('Kalorien',kc,kt,'kcal')+bar('Protein',pr,pt,'g');
+  host.innerHTML='<div class="goal-sub" style="margin:2px 0 12px">Heute konsumiert — '+fmtDate(d)+'</div>'
+    +bar('Kalorien',kc,tg.kcal||0,'kcal')
+    +bar('Protein',pr,tg.protein||0,'g')
+    +bar('Fett',ft,tg.fat||0,'g')
+    +bar('Kohlenhydrate',cb,tg.carb||0,'g');
 }
 
 /* ---------------- Start ---------------- */
