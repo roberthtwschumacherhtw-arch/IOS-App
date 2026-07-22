@@ -115,6 +115,10 @@ button.today{white-space:nowrap}
 .mi-empty{font-size:12.5px;color:var(--ink-30);padding:9px 0}
 .foodtitle{font-weight:650;font-size:15px;margin-bottom:10px}
 .askinput{font-size:16px}
+.exmenu{background:none;border:1px solid var(--line);border-radius:9px;color:var(--ink-60);font-size:18px;line-height:1;padding:0;width:44px;height:38px;cursor:pointer}
+.exmenu:active{background:var(--field)}
+.exed-groups{margin-top:2px}
+.exed-info{margin-top:10px}
 .foodacts{display:flex;gap:8px;margin:0 0 10px}
 .foodacts button{flex:1}
 .foodcart{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
@@ -1578,27 +1582,13 @@ function renderExList(){
       html += byG[g].map(e=>{
         const n = db.workouts.filter(w=>w.exercise===e).length;
         return '<li class="exsub"><div class="li-main"><div class="li-t">'+esc(e)+'</div><div class="li-s">'+n+' Einheiten</div></div>'
-          +'<div class="li-d"><button class="link" data-exren="'+esc(e)+'">umbenennen</button><br><button class="link" data-exgrp="'+esc(e)+'">Gruppe ändern</button>'+(n?'':'<br><button class="link warn" data-exdel="'+esc(e)+'">entfernen</button>')+'</div></li>';
+          +'<div class="li-d"><button class="exmenu" data-exmenu="'+esc(e)+'" aria-label="Übung bearbeiten">⋯</button></div></li>';
       }).join('');
     }
   }
   $('#exlist').innerHTML = html;
   $$('#exlist [data-exg]').forEach(b=>b.onclick=()=>{ const g=b.dataset.exg; if(openExGroups.has(g)) openExGroups.delete(g); else openExGroups.add(g); renderExList(); });
-  $$('#exlist [data-exren]').forEach(b=>b.onclick=()=>renameExercise(b.dataset.exren));
-  $$('#exlist [data-exgrp]').forEach(b=>b.onclick=async()=>{
-    const name = b.dataset.exgrp;
-    const g = await chooseGroup(name, muscleOf(name));
-    if(!g) return;
-    db.exGroups[name] = g;
-    await Store.save(db); renderAll(); toast(`${name} → ${g}`);
-  });
-  $$('#exlist [data-exdel]').forEach(b=>b.onclick=async()=>{
-    const name = b.dataset.exdel;
-    db.exercises = db.exercises.filter(e=>e!==name);
-    delete db.exGroups[name];
-    for(const s of db.splits) for(const d of s.days) d.ex = d.ex.filter(x=>x!==name);
-    await Store.save(db); renderAll();
-  });
+  $$('#exlist [data-exmenu]').forEach(b=>b.onclick=()=>openExEdit(b.dataset.exmenu));
 }
 
 /* ---------------- CSV / Sicherung ---------------- */
@@ -2101,10 +2091,8 @@ askOv.addEventListener('click',e=>{ if(e.target===askOv) _askClose(null); });
 askOv.querySelector('.askinput').addEventListener('keydown',e=>{ if(e.key==='Enter') _askClose(askOv.querySelector('.askinput').value); });
 
 /* ---- Übung umbenennen (überall konsistent) ---- */
-async function renameExercise(oldName){
-  const n = await askText('Übung umbenennen', oldName, 'Neuer Name');
-  if(n===null) return;
-  const name=n.trim(); if(!name || name===oldName) return;
+function applyExerciseRename(oldName, name){
+  if(!name || name===oldName) return false;
   const merged = db.exercises.some(e=>e!==oldName && e.toLowerCase()===name.toLowerCase());
   db.exercises = db.exercises.filter(e=>e!==oldName);
   if(!db.exercises.includes(name)) db.exercises.push(name);
@@ -2114,8 +2102,57 @@ async function renameExercise(oldName){
   if(db.exGroups && db.exGroups[oldName]!=null){ if(db.exGroups[name]==null) db.exGroups[name]=db.exGroups[oldName]; delete db.exGroups[oldName]; }
   if(db.exNotes && db.exNotes[oldName]!=null){ if(db.exNotes[name]==null) db.exNotes[name]=db.exNotes[oldName]; delete db.exNotes[oldName]; }
   if(typeof anExSel!=='undefined' && anExSel===oldName) anExSel=name;
-  await Store.save(db); renderAll(); toast(merged?('Zusammengeführt mit '+name):'Umbenannt');
+  return merged;
 }
+
+/* ---- Übung bearbeiten (Name + Muskelgruppe) ---- */
+const exEdOv=document.createElement('div'); exEdOv.className='pickov'; exEdOv.style.display='none';
+exEdOv.innerHTML=`<div class="picksheet">
+  <div class="foodtitle">Übung bearbeiten</div>
+  <label class="f">Name</label>
+  <input class="exed-name" type="text">
+  <label class="f" style="margin-top:12px">Muskelgruppe</label>
+  <div class="pickchips exed-groups"></div>
+  <p class="hint exed-info"></p>
+  <button class="exed-save" style="width:100%;margin-top:14px">Speichern</button>
+  <button class="link warn exed-del" style="width:100%;margin-top:10px;text-align:center">Übung löschen</button>
+  <button class="link exed-close" style="width:100%;margin-top:2px;text-align:center">Abbrechen</button>
+</div>`;
+root.appendChild(exEdOv);
+let _exEdName=null,_exEdGrp=null;
+function _exEdRenderGroups(){
+  exEdOv.querySelector('.exed-groups').innerHTML=GROUP_ORDER.map(g=>'<button class="chip'+(g===_exEdGrp?' on':'')+'" data-g="'+esc(g)+'">'+esc(g)+'</button>').join('');
+  exEdOv.querySelectorAll('.exed-groups .chip').forEach(c=>c.onclick=()=>{ _exEdGrp=c.dataset.g; _exEdRenderGroups(); });
+}
+function _exEdClose(){ exEdOv.style.display='none'; _exEdName=null; }
+function openExEdit(name){
+  _exEdName=name; _exEdGrp=muscleOf(name);
+  exEdOv.querySelector('.exed-name').value=name;
+  _exEdRenderGroups();
+  const used=db.workouts.filter(w=>w.exercise===name).length;
+  exEdOv.querySelector('.exed-info').textContent = used? (used+' Einheit(en) nutzen diese Übung — Umbenennen ändert sie überall mit.') : 'Diese Übung wurde noch nicht benutzt.';
+  exEdOv.querySelector('.exed-del').style.display = used? 'none':'block';
+  exEdOv.style.display='flex';
+  setTimeout(()=>{ try{ exEdOv.querySelector('.exed-name').focus(); }catch(e){} },60);
+}
+exEdOv.querySelector('.exed-close').onclick=_exEdClose;
+exEdOv.addEventListener('click',e=>{ if(e.target===exEdOv) _exEdClose(); });
+exEdOv.querySelector('.exed-save').onclick=async()=>{
+  const old=_exEdName; if(!old) return;
+  const nm=(exEdOv.querySelector('.exed-name').value||'').trim();
+  let merged=false, final=old;
+  if(nm && nm!==old){ merged=applyExerciseRename(old,nm); final=nm; }
+  if(_exEdGrp) db.exGroups[final]=_exEdGrp;
+  await Store.save(db); renderAll(); _exEdClose();
+  toast(merged? ('Zusammengeführt mit '+final) : 'Gespeichert');
+};
+exEdOv.querySelector('.exed-del').onclick=async()=>{
+  const name=_exEdName; if(!name) return;
+  db.exercises=db.exercises.filter(e=>e!==name);
+  delete db.exGroups[name]; if(db.exNotes) delete db.exNotes[name];
+  for(const s of db.splits) for(const d of s.days) d.ex=d.ex.filter(x=>x!==name);
+  await Store.save(db); renderAll(); _exEdClose(); toast('Übung gelöscht');
+};
 function renderAll(){
   fillDaySel();
   fillAnEx();
