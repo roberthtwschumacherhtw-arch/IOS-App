@@ -114,6 +114,7 @@ button.today{white-space:nowrap}
 .mealgrp-add{background:var(--accent);color:var(--on-accent);border:0;border-radius:50%;width:28px;height:28px;font-size:17px;line-height:1;padding:0;cursor:pointer}
 .mi-empty{font-size:12.5px;color:var(--ink-30);padding:9px 0}
 .foodtitle{font-weight:650;font-size:15px;margin-bottom:10px}
+.askinput{font-size:16px}
 .foodacts{display:flex;gap:8px;margin:0 0 10px}
 .foodacts button{flex:1}
 .foodcart{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
@@ -700,7 +701,7 @@ async function moveSession(key){
 async function renameSession(key){
   const entries = db.workouts.filter(w=>(w.sessionId||w.id)===key);
   if(!entries.length) return;
-  const n = prompt('Name der Einheit (leer = Freies Training)', entries[0].day||'');
+  const n = await askText('Einheit umbenennen', entries[0].day||'', 'leer = Freies Training');
   if(n===null) return;
   const name = n.trim() || null;
   for(const e of entries) e.day = name;
@@ -1023,7 +1024,10 @@ function mapProd(p){
   const pr=num(n['proteins_100g']);
   const ft=num(n['fat_100g']);
   const cb=num(n['carbohydrates_100g']);
-  return {code:p.code, name:(p.product_name||'Unbenannt').trim(), brand:(p.brands||'').split(',')[0].trim(), kc100:kc, pr100:pr!=null?pr:0, ft100:ft!=null?ft:0, cb100:cb!=null?cb:0, qty:(p.quantity||'').trim(), serving:num(p.serving_quantity)||0};
+  let sa=num(n['salt_100g']);
+  if(sa==null){ const so=num(n['sodium_100g']); if(so!=null) sa=Math.round(so*2.5*100)/100; }
+  let fb=num(n['fiber_100g']); if(fb==null) fb=num(n['fibers_100g']);
+  return {code:p.code, name:(p.product_name||'Unbenannt').trim(), brand:(p.brands||'').split(',')[0].trim(), kc100:kc, pr100:pr!=null?pr:0, ft100:ft!=null?ft:0, cb100:cb!=null?cb:0, s100:sa, fib100:fb, qty:(p.quantity||'').trim(), serving:num(p.serving_quantity)||0};
 }
 // OFF-Server liefern pro Anfrage zufällig mal keinen CORS-Header → "Failed to fetch".
 // Deshalb mehrfach wiederholen; ein neuer Versuch trifft meist einen funktionierenden Server.
@@ -1073,7 +1077,7 @@ async function addFoodMeal(text, kc, pr, meta){
 }
 function pushFav(p){
   db.foodFav=(db.foodFav||[]).filter(f=>!(f.name===p.name && f.brand===p.brand));
-  db.foodFav.unshift({code:p.code,name:p.name,brand:p.brand,kc100:p.kc100,pr100:p.pr100,ft100:p.ft100||0,cb100:p.cb100||0,qty:p.qty||'',serving:p.serving||0});
+  db.foodFav.unshift({code:p.code,name:p.name,brand:p.brand,kc100:p.kc100,pr100:p.pr100,ft100:p.ft100||0,cb100:p.cb100||0,s100:p.s100,fib100:p.fib100,qty:p.qty||'',serving:p.serving||0});
   db.foodFav=db.foodFav.slice(0,24);
 }
 function showFavs(){
@@ -1240,18 +1244,18 @@ function showProdDetail(p){
   det.innerHTML=`
     <button class="link prodback">← zurück</button>
     <div class="li-t" style="font-size:16px;margin:6px 0 2px">${esc(p.name)}</div>
-    <div class="li-s">${p.brand?esc(p.brand)+' · ':''}${Math.round(p.kc100)} kcal · ${round(p.pr100,1)} g P · ${round(p.ft100||0,1)} g F · ${round(p.cb100||0,1)} g KH / 100 g</div>
+    <div class="li-s">${p.brand?esc(p.brand)+' · ':''}${Math.round(p.kc100)} kcal · ${round(p.pr100,1)} g P · ${round(p.ft100||0,1)} g F · ${round(p.cb100||0,1)} g KH${p.s100!=null?' · '+round(p.s100,2)+' g Salz':''}${p.fib100!=null?' · '+round(p.fib100,1)+' g Ballast':''} / 100 g</div>
     <label class="f" style="margin-top:16px">Menge (g / ml)</label>
     <input type="number" class="prodg" inputmode="numeric" value="${p.serving>0?Math.round(p.serving):100}">
     <div class="pickchips prodport" style="margin-top:8px">${presets.map(([g,l])=>`<button class="chip" data-g="${g}">${l}</button>`).join('')}</div>
     <div class="prodcalc" style="margin:14px 0"></div>
     <button class="prodadd" style="width:100%">Zur Auswahl hinzufügen</button>`;
   const g=det.querySelector('.prodg'), calc=det.querySelector('.prodcalc');
-  function upd(){ const grams=num(g.value)||0; const kc=p.kc100*grams/100, pr=p.pr100*grams/100, ft=(p.ft100||0)*grams/100, cb=(p.cb100||0)*grams/100; calc.innerHTML=`<b>${Math.round(kc)} kcal</b> · ${round(pr,1)} g P · ${round(ft,1)} g F · ${round(cb,1)} g KH`; return {kc,pr,ft,cb,grams}; }
+  function upd(){ const grams=num(g.value)||0; const kc=p.kc100*grams/100, pr=p.pr100*grams/100, ft=(p.ft100||0)*grams/100, cb=(p.cb100||0)*grams/100, sa=(p.s100||0)*grams/100, fb=(p.fib100||0)*grams/100; calc.innerHTML=`<b>${Math.round(kc)} kcal</b> · ${round(pr,1)} g P · ${round(ft,1)} g F · ${round(cb,1)} g KH`+(p.s100!=null?` · ${round(sa,2)} g Salz`:'')+(p.fib100!=null?` · ${round(fb,1)} g Ballast`:''); return {kc,pr,ft,cb,sa,fb,grams}; }
   g.oninput=upd; upd();
   det.querySelectorAll('.prodport .chip').forEach(b=>b.onclick=()=>{ g.value=b.dataset.g; upd(); });
   det.querySelector('.prodback').onclick=()=>{ showList(); };
-  det.querySelector('.prodadd').onclick=()=>{ const {kc,pr,ft,cb,grams}=upd(); const text=`${p.name}${p.brand?' ('+p.brand+')':''} — ${Math.round(grams)} g`; pushFav(p); addToCart({pname:p.name+(p.brand?' ('+p.brand+')':''), text, kc, pr, ft, cb, g:Math.round(grams), k100:p.kc100, p100:p.pr100, f100:p.ft100||0, c100:p.cb100||0}); showList(); toast('Hinzugefügt'); };
+  det.querySelector('.prodadd').onclick=()=>{ const {kc,pr,ft,cb,sa,fb,grams}=upd(); const text=`${p.name}${p.brand?' ('+p.brand+')':''} — ${Math.round(grams)} g`; pushFav(p); addToCart({pname:p.name+(p.brand?' ('+p.brand+')':''), text, kc, pr, ft, cb, salt:(p.s100!=null?Math.round(sa*100)/100:null), fib:(p.fib100!=null?Math.round(fb*10)/10:null), g:Math.round(grams), k100:p.kc100, p100:p.pr100, f100:p.ft100||0, c100:p.cb100||0, s100:p.s100, fib100:p.fib100}); showList(); toast('Hinzugefügt'); };
 }
 
 /* ---- Barcode-Scanner ---- */
@@ -1574,12 +1578,13 @@ function renderExList(){
       html += byG[g].map(e=>{
         const n = db.workouts.filter(w=>w.exercise===e).length;
         return '<li class="exsub"><div class="li-main"><div class="li-t">'+esc(e)+'</div><div class="li-s">'+n+' Einheiten</div></div>'
-          +'<div class="li-d"><button class="link" data-exgrp="'+esc(e)+'">Gruppe ändern</button>'+(n?'':'<br><button class="link warn" data-exdel="'+esc(e)+'">entfernen</button>')+'</div></li>';
+          +'<div class="li-d"><button class="link" data-exren="'+esc(e)+'">umbenennen</button><br><button class="link" data-exgrp="'+esc(e)+'">Gruppe ändern</button>'+(n?'':'<br><button class="link warn" data-exdel="'+esc(e)+'">entfernen</button>')+'</div></li>';
       }).join('');
     }
   }
   $('#exlist').innerHTML = html;
   $$('#exlist [data-exg]').forEach(b=>b.onclick=()=>{ const g=b.dataset.exg; if(openExGroups.has(g)) openExGroups.delete(g); else openExGroups.add(g); renderExList(); });
+  $$('#exlist [data-exren]').forEach(b=>b.onclick=()=>renameExercise(b.dataset.exren));
   $$('#exlist [data-exgrp]').forEach(b=>b.onclick=async()=>{
     const name = b.dataset.exgrp;
     const g = await chooseGroup(name, muscleOf(name));
@@ -2070,6 +2075,47 @@ function renderImportEditor(){
   }; }
 
 { const _wm=$('#wlistMore'); if(_wm) _wm.onclick=()=>{ wlistLimit = wlistLimit>=10?5:10; renderWList(); }; }
+/* ---- Eingabe-Dialog (statt prompt – zuverlässig in iOS-PWA) ---- */
+const askOv=document.createElement('div'); askOv.className='pickov'; askOv.style.display='none';
+askOv.innerHTML=`<div class="picksheet">
+  <div class="foodtitle asktitle"></div>
+  <input class="askinput" type="text">
+  <div class="row" style="margin-top:14px"><button class="ghost askcancel">Abbrechen</button><button class="askok">Übernehmen</button></div>
+</div>`;
+root.appendChild(askOv);
+let _askRes=null;
+function _askClose(val){ askOv.style.display='none'; const r=_askRes; _askRes=null; if(r) r(val); }
+function askText(title, value, placeholder){
+  return new Promise(res=>{
+    _askRes=res;
+    askOv.querySelector('.asktitle').textContent=title||'';
+    const inp=askOv.querySelector('.askinput');
+    inp.value=value||''; inp.placeholder=placeholder||'';
+    askOv.style.display='flex';
+    setTimeout(()=>{ try{ inp.focus(); inp.select(); }catch(e){} },60);
+  });
+}
+askOv.querySelector('.askcancel').onclick=()=>_askClose(null);
+askOv.querySelector('.askok').onclick=()=>_askClose(askOv.querySelector('.askinput').value);
+askOv.addEventListener('click',e=>{ if(e.target===askOv) _askClose(null); });
+askOv.querySelector('.askinput').addEventListener('keydown',e=>{ if(e.key==='Enter') _askClose(askOv.querySelector('.askinput').value); });
+
+/* ---- Übung umbenennen (überall konsistent) ---- */
+async function renameExercise(oldName){
+  const n = await askText('Übung umbenennen', oldName, 'Neuer Name');
+  if(n===null) return;
+  const name=n.trim(); if(!name || name===oldName) return;
+  const merged = db.exercises.some(e=>e!==oldName && e.toLowerCase()===name.toLowerCase());
+  db.exercises = db.exercises.filter(e=>e!==oldName);
+  if(!db.exercises.includes(name)) db.exercises.push(name);
+  db.exercises.sort((a,b)=>a.localeCompare(b,'de'));
+  for(const w of db.workouts){ if(w.exercise===oldName) w.exercise=name; if(w.swapped===oldName) w.swapped=name; }
+  for(const s of db.splits) for(const d of s.days) d.ex = d.ex.map(x=>x===oldName?name:x);
+  if(db.exGroups && db.exGroups[oldName]!=null){ if(db.exGroups[name]==null) db.exGroups[name]=db.exGroups[oldName]; delete db.exGroups[oldName]; }
+  if(db.exNotes && db.exNotes[oldName]!=null){ if(db.exNotes[name]==null) db.exNotes[name]=db.exNotes[oldName]; delete db.exNotes[oldName]; }
+  if(typeof anExSel!=='undefined' && anExSel===oldName) anExSel=name;
+  await Store.save(db); renderAll(); toast(merged?('Zusammengeführt mit '+name):'Umbenannt');
+}
 function renderAll(){
   fillDaySel();
   fillAnEx();
