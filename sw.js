@@ -1,5 +1,5 @@
 // Logbuch Service Worker – App offline verfügbar machen
-const CACHE = 'logbuch-v1';
+const CACHE = 'logbuch-v2';
 
 self.addEventListener('install', (e) => { self.skipWaiting(); });
 
@@ -17,8 +17,11 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== location.origin) return; // externe (Open Food Facts, CDN) nicht abfangen
 
-  // HTML/Navigation: erst Netz (damit Updates ankommen), offline aus dem Cache
-  if (req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')) {
+  const isHtml = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
+  const isCode = /\.(js|css)$/i.test(url.pathname);
+
+  // HTML + eigener Code: erst Netz (damit Updates ankommen), offline aus dem Cache
+  if (isHtml || isCode) {
     e.respondWith((async () => {
       try {
         const net = await fetch(req);
@@ -33,7 +36,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Übrige gleiche-Origin-Dateien: erst Cache, sonst Netz
+  // Übrige gleiche-Origin-Dateien (Bilder, Icons): erst Cache, sonst Netz
   e.respondWith((async () => {
     const cached = await caches.match(req);
     if (cached) return cached;
