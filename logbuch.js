@@ -1232,6 +1232,281 @@ function renderMeals(){
 $('#bdate').addEventListener('change', ()=>{ renderMeals(); renderNutri(); });
 
 
+/* ---------------- Suche: Normalisierung, Fuzzy-Scoring, lokale Quellen ---------------- */
+// Ziel: Tippfehler- und umlauttolerante Suche, eigene Historie zuerst, Rohware findbar
+// ohne exakten Markennamen. Alles hier ist synchron/offline — kein API-Call nötig.
+const _FOLD = {'ä':'ae','ö':'oe','ü':'ue','ß':'ss','â':'a','à':'a','á':'a','ã':'a','å':'a','æ':'ae','ç':'c','è':'e','é':'e','ê':'e','ë':'e','ì':'i','í':'i','î':'i','ï':'i','ñ':'n','ò':'o','ó':'o','ô':'o','õ':'o','ø':'o','ù':'u','ú':'u','û':'u','ý':'y'};
+function fold(s){
+  const t = String(s==null?'':s).toLowerCase();
+  let out = '';
+  for(const ch of t) out += (_FOLD[ch]!==undefined ? _FOLD[ch] : ch);
+  return out.replace(/[^a-z0-9]+/g,' ').trim();
+}
+function toks(s){ const f=fold(s); return f?f.split(' '):[]; }
+
+// Levenshtein mit früher Abbruchgrenze — nur für kurze Wörter, daher billig.
+function lev(a,b,max){
+  if(a===b) return 0;
+  const la=a.length, lb=b.length;
+  if(Math.abs(la-lb)>max) return max+1;
+  let prev=new Array(lb+1), cur=new Array(lb+1);
+  for(let j=0;j<=lb;j++) prev[j]=j;
+  for(let i=1;i<=la;i++){
+    cur[0]=i; let best=cur[0];
+    for(let j=1;j<=lb;j++){
+      const c = a.charCodeAt(i-1)===b.charCodeAt(j-1) ? 0 : 1;
+      cur[j]=Math.min(prev[j]+1, cur[j-1]+1, prev[j-1]+c);
+      if(cur[j]<best) best=cur[j];
+    }
+    if(best>max) return max+1;
+    const t=prev; prev=cur; cur=t;
+  }
+  return prev[lb];
+}
+// Wie gut passt ein Such-Token auf irgendeines der Namens-Token?
+function tokScore(qt, nts){
+  let best=0;
+  for(const nt of nts){
+    let s=0;
+    if(nt===qt) s=100;
+    else if(nt.startsWith(qt)) s=82-Math.min(22, nt.length-qt.length);
+    else if(qt.length>=5 && qt.startsWith(nt)) s=60;              // "haehnchenbrust" vs. "haehnchen"
+    else if(qt.length>=4 && nt.indexOf(qt)>=0) s=48;              // Wortmitte
+    else if(qt.length>=4){
+      const max = qt.length>=7 ? 2 : 1;                            // Tippfehlertoleranz
+      const d = lev(qt, nt, max);
+      if(d<=max) s=58-12*d;
+      else if(qt.length>=5 && nt.length>qt.length){
+        // abgebrochenes Wort MIT Tippfehler: "susskart" → "suesskartoffel"
+        const m2 = qt.length>=8 ? 2 : 1;
+        let bd = m2+1;
+        for(let k=-1;k<=1;k++){
+          const L=qt.length+k;
+          if(L<3 || L>nt.length) continue;
+          const d2=lev(qt, nt.slice(0,L), m2);
+          if(d2<bd) bd=d2;
+        }
+        if(bd<=m2) s=52-10*bd;
+      }
+    }
+    if(s>best) best=s;
+  }
+  return best;
+}
+// Gesamtscore eines Produktnamens gegen die Suchanfrage. 0 = passt nicht.
+function scoreName(name, brand, extra, q){
+  const qts=toks(q); if(!qts.length) return 0;
+  const nts=toks(name); if(!nts.length) return 0;
+  const bts=toks(brand);
+  const xts=toks(extra);
+  let sum=0;
+  for(const qt of qts){
+    const s=Math.max(tokScore(qt,nts), tokScore(qt,xts)*0.95, tokScore(qt,bts)*0.6);
+    if(s<=0) return 0;                       // jedes Such-Token muss irgendwo matchen
+    sum+=s;
+  }
+  let sc=sum/qts.length;
+  const nf=nts.join(' '), qf=qts.join(' ');
+  if(nf===qf) sc+=140;                       // exakter Treffer ganz nach oben
+  else if(nf.startsWith(qf)) sc+=70;         // "Süßkartoffel …" vor "Bio-Pommes aus Süßkartoffel"
+  sc-=Math.max(0, nts.length-qts.length)*7;  // je mehr Zusatzwörter, desto unspezifischer
+  sc-=Math.min(25, nf.length/8);             // lange Namen = eher Fertigprodukt
+  return Math.max(1, sc);
+}
+
+// ---- Grundnahrungsmittel: Rohware, die in Open Food Facts kaum sauber existiert ----
+// [Name, kcal, Protein, Fett, KH, Salz, Ballaststoffe, Portion in g, Synonyme]
+// Werte pro 100 g, roh/trocken sofern nicht anders angegeben.
+const BASE_FOODS_RAW=[
+["Süßkartoffel, roh",86,1.6,0.1,20,0.02,3,200,"sweet potato batate"],
+["Kartoffel, roh",77,2,0.1,17,0.01,2.2,200,"potato erdapfel"],
+["Karotte",41,0.9,0.2,9.6,0.17,2.8,80,"mohrrübe möhre carrot"],
+["Brokkoli",34,2.8,0.4,7,0.08,2.6,200,"broccoli"],
+["Blumenkohl",25,1.9,0.3,5,0.08,2,200,"karfiol cauliflower"],
+["Zucchini",17,1.2,0.3,3.1,0.02,1,200,"courgette"],
+["Paprika, rot",31,1,0.3,6,0.01,2.1,150,"peperoni bell pepper"],
+["Tomate",18,0.9,0.2,3.9,0.01,1.2,120,"tomato"],
+["Gurke",15,0.7,0.1,3.6,0.01,0.5,150,"cucumber salatgurke"],
+["Zwiebel",40,1.1,0.1,9.3,0.01,1.7,80,"onion"],
+["Knoblauch",149,6.4,0.5,33,0.04,2.1,5,"garlic"],
+["Spinat",23,2.9,0.4,3.6,0.2,2.2,150,"spinach"],
+["Champignons",22,3.1,0.3,3.3,0.01,1,150,"pilze mushrooms"],
+["Aubergine",25,1,0.2,5.9,0.01,3,200,"eggplant melanzani"],
+["Grüne Bohnen",31,1.8,0.1,7,0.02,2.7,150,"buschbohnen green beans"],
+["Erbsen",81,5.4,0.4,14,0.01,5.1,150,"peas"],
+["Mais",86,3.3,1.4,19,0.04,2,100,"corn"],
+["Rosenkohl",43,3.4,0.3,9,0.06,3.8,200,"brussels sprouts"],
+["Weißkohl",25,1.3,0.1,5.8,0.04,2.5,200,"weisskraut cabbage"],
+["Rotkohl",31,1.4,0.2,7.4,0.07,2.1,200,"blaukraut red cabbage"],
+["Kürbis (Hokkaido)",26,1,0.1,6.5,0.01,0.5,200,"pumpkin"],
+["Rote Bete",43,1.6,0.2,10,0.19,2.8,150,"beete beetroot randen"],
+["Sellerie",16,0.7,0.2,3,0.2,1.6,100,"celery"],
+["Lauch",61,1.5,0.3,14,0.05,1.8,150,"porree leek"],
+["Kopfsalat",14,1.4,0.2,1.1,0.02,1.3,80,"salat lettuce"],
+["Feldsalat",14,1.8,0.4,0.7,0.03,1.5,50,"rapunzel"],
+["Avocado",160,2,15,8.5,0.02,6.7,150,"avocado"],
+["Spargel",20,2.2,0.1,3.9,0.01,2.1,250,"asparagus"],
+["Banane",89,1.1,0.3,23,0.01,2.6,120,"banana"],
+["Apfel",52,0.3,0.2,14,0.01,2.4,150,"apple"],
+["Birne",57,0.4,0.1,15,0.01,3.1,150,"pear"],
+["Orange",47,0.9,0.1,12,0.01,2.4,180,"apfelsine"],
+["Mandarine",53,0.8,0.3,13,0.01,1.8,80,"clementine"],
+["Erdbeeren",32,0.7,0.3,7.7,0.01,2,150,"strawberries"],
+["Heidelbeeren",57,0.7,0.3,14,0.01,2.4,125,"blaubeeren blueberries"],
+["Himbeeren",52,1.2,0.7,12,0.01,6.5,125,"raspberries"],
+["Weintrauben",69,0.7,0.2,18,0.01,0.9,150,"trauben grapes"],
+["Ananas",50,0.5,0.1,13,0.01,1.4,150,"pineapple"],
+["Mango",60,0.8,0.4,15,0.01,1.6,150,"mango"],
+["Wassermelone",30,0.6,0.2,7.6,0.01,0.4,250,"melone watermelon"],
+["Kiwi",61,1.1,0.5,15,0.01,3,80,"kiwi"],
+["Pfirsich",39,0.9,0.3,10,0.01,1.5,150,"peach nektarine"],
+["Zitrone",29,1.1,0.3,9,0.01,2.8,60,"lemon"],
+["Datteln, getrocknet",282,2.5,0.4,75,0.01,8,25,"dates medjool"],
+["Rosinen",299,3.1,0.5,79,0.03,3.7,30,"raisins sultaninen"],
+["Hähnchenbrustfilet, roh",106,23,1.2,0,0.15,0,150,"huhn hühnchen chicken poulet haehnchenbrust"],
+["Hähnchenschenkel",172,18,11,0,0.2,0,150,"keule chicken thigh"],
+["Putenbrustfilet",105,24,1,0,0.15,0,150,"pute truthahn turkey"],
+["Rinderhackfleisch, mager (5%)",137,21,5,0,0.15,0,150,"hack hackfleisch rind beef mince"],
+["Gemischtes Hackfleisch",232,18,18,0,0.2,0,150,"hack hackfleisch mett"],
+["Schweineschnitzel",108,22,2,0,0.15,0,150,"schwein pork"],
+["Rumpsteak",130,22,4.5,0,0.15,0,200,"steak rind beef"],
+["Lachs, roh",208,20,13,0,0.1,0,150,"salmon"],
+["Lachs, geräuchert",180,22,10,0,3.5,0,50,"raeucherlachs smoked salmon"],
+["Thunfisch, Dose im eigenen Saft",116,26,1,0,0.9,0,120,"tuna"],
+["Kabeljau",82,18,0.7,0,0.2,0,150,"dorsch cod"],
+["Forelle",119,20,3.5,0,0.1,0,150,"trout"],
+["Garnelen",99,24,0.3,0,0.4,0,150,"shrimps scampi prawns"],
+["Ei (Hühnerei)",143,12.6,9.5,0.7,0.35,0,58,"eier egg huehnerei"],
+["Eiklar",52,11,0.2,0.7,0.4,0,33,"eiweiss egg white"],
+["Eigelb",322,16,27,3.6,0.1,0,17,"dotter egg yolk"],
+["Magerquark",67,12,0.2,4,0.1,0,250,"quark curd"],
+["Speisequark 20%",109,12,5.1,3.2,0.1,0,250,"quark"],
+["Skyr",63,11,0.2,4,0.1,0,150,"skyr"],
+["Naturjoghurt 3,5%",63,3.5,3.5,4.7,0.13,0,150,"joghurt yogurt"],
+["Griechischer Joghurt 10%",133,5.5,10,3.5,0.1,0,150,"joghurt greek yogurt"],
+["Milch 3,5%",64,3.4,3.5,4.8,0.13,0,200,"vollmilch milk"],
+["Milch 1,5%",47,3.4,1.5,4.9,0.13,0,200,"milk fettarme"],
+["Hüttenkäse",98,12,4.3,3,0.5,0,200,"koerniger frischkaese cottage cheese"],
+["Gouda",356,25,28,0,2,0,30,"kaese cheese"],
+["Mozzarella",254,18,20,1,1.2,0,125,"kaese cheese"],
+["Feta",264,14,21,4.1,3,0,50,"schafskaese kaese"],
+["Parmesan",392,36,27,0,1.6,0,15,"kaese parmigiano"],
+["Frischkäse",253,6,24,3,0.8,0,30,"cream cheese philadelphia"],
+["Butter",741,0.7,82,0.6,1.2,0,10,"butter"],
+["Harzer Käse",125,30,0.7,0,3,0,125,"harzer roller kaese"],
+["Reis, weiß (roh)",351,7,0.6,77,0.01,1.3,75,"rice basmati langkorn"],
+["Reis, Vollkorn (roh)",350,7.8,2.7,70,0.01,3.5,75,"naturreis brown rice"],
+["Nudeln, Hartweizen (roh)",358,12.5,1.5,71,0.01,3,100,"pasta spaghetti penne"],
+["Vollkornnudeln (roh)",337,14,2.5,60,0.01,9,100,"pasta vollkorn"],
+["Haferflocken",372,13.5,7,59,0.01,10,60,"hafer oats porridge"],
+["Couscous (trocken)",358,12,0.6,72,0.01,5,80,"couscous"],
+["Quinoa (trocken)",368,14,6.1,58,0.01,7,75,"quinoa"],
+["Linsen (trocken)",353,25,1.1,60,0.01,11,80,"lentils"],
+["Kichererbsen (trocken)",364,19,6,61,0.02,17,80,"chickpeas"],
+["Kidneybohnen, Dose",100,7,0.5,13,0.5,6,120,"bohnen beans"],
+["Vollkornbrot",210,7,1.5,38,1.1,6.5,45,"brot bread"],
+["Toastbrot",265,8,3.5,48,1.1,3,25,"toast brot"],
+["Weizenbrötchen",275,9,1.5,55,1.2,3,60,"broetchen semmel roll"],
+["Knäckebrot",350,10,1.5,66,1.1,16,10,"knaeckebrot"],
+["Weizenmehl Type 405",348,10,1,72,0.01,3,100,"mehl flour"],
+["Mandeln",589,21,51,5.4,0.01,12,30,"almonds nuesse"],
+["Walnüsse",654,15,65,7,0.01,6.7,30,"walnuts nuesse"],
+["Haselnüsse",644,15,62,7,0.01,8,30,"hazelnuts nuesse"],
+["Cashewkerne",553,18,44,27,0.02,3.3,30,"cashews nuesse"],
+["Erdnüsse",567,26,49,8,0.02,8.5,30,"peanuts nuesse"],
+["Erdnussbutter",588,25,50,12,0.5,6,20,"peanut butter erdnussmus"],
+["Sonnenblumenkerne",584,21,51,11,0.01,8.6,20,"kerne seeds"],
+["Leinsamen",534,18,42,1.6,0.03,27,15,"flaxseed"],
+["Chiasamen",486,17,31,6,0.02,34,15,"chia"],
+["Olivenöl",884,0,100,0,0,0,10,"oel oil olive"],
+["Rapsöl",884,0,100,0,0,0,10,"oel oil canola"],
+["Kokosöl",892,0,99,0,0,0,10,"oel oil coconut"],
+["Tofu, natur",127,13,7.5,1,0.02,1,200,"tofu soja"],
+["Räuchertofu",160,17,9.5,1,1,1.5,200,"tofu smoked"],
+["Sojamilch, ungesüßt",33,3.3,1.8,0.6,0.09,0.6,200,"soja drink soy milk"],
+["Hafermilch",45,0.5,1.5,6.6,0.09,0.8,200,"hafer drink oat milk"],
+["Whey Protein (Pulver)",375,78,4,6,0.5,0,30,"eiweisspulver proteinpulver shake"],
+["Honig",304,0.3,0,82,0.01,0.2,20,"honey"],
+["Zucker",400,0,0,100,0,0,5,"sugar haushaltszucker"],
+["Zartbitterschokolade 85%",592,10,46,22,0.02,12,25,"schokolade dark chocolate"],
+["Vollmilchschokolade",535,7.3,30,59,0.08,3.4,25,"schokolade chocolate"],
+["Ketchup",102,1.2,0.1,24,1.8,0.4,20,"tomatenketchup"],
+["Mayonnaise",680,1.1,75,1.5,1.2,0,15,"mayo"],
+["Senf",66,4.4,3.5,5,3,3,10,"mustard"]
+];
+// Häufig geloggte Basics gewinnen bei knappen Scores gegen exotischere Nachbarn
+// ("chicken" soll Hähnchenbrust bringen, nicht Hähnchenschenkel).
+const BASE_PRIO=new Set(['Süßkartoffel, roh','Kartoffel, roh','Karotte','Brokkoli','Tomate','Gurke','Zwiebel','Paprika, rot','Avocado','Banane','Apfel','Heidelbeeren','Hähnchenbrustfilet, roh','Putenbrustfilet','Rinderhackfleisch, mager (5%)','Lachs, roh','Thunfisch, Dose im eigenen Saft','Ei (Hühnerei)','Magerquark','Skyr','Naturjoghurt 3,5%','Milch 3,5%','Hüttenkäse','Gouda','Butter','Reis, weiß (roh)','Nudeln, Hartweizen (roh)','Haferflocken','Linsen (trocken)','Kichererbsen (trocken)','Vollkornbrot','Mandeln','Erdnussbutter','Olivenöl','Tofu, natur','Whey Protein (Pulver)']);
+const BASE_FOODS=BASE_FOODS_RAW.map(r=>({code:'', name:r[0], brand:'', kc100:r[1], pr100:r[2], ft100:r[3], cb100:r[4], s100:r[5], fib100:r[6], qty:'', serving:r[7], _alias:r[8]||'', _prio:BASE_PRIO.has(r[0])?1:0, _base:true}));
+
+// ---- Index über alles, was Robert schon mal gegessen hat ----
+let _localIdx=null;
+function invalidateFoodIdx(){ _localIdx=null; }
+function localFoods(){
+  if(_localIdx) return _localIdx;
+  const map=new Map();
+  const put=(p,date)=>{
+    if(!p || p.kc100==null || !String(p.name||'').trim()) return;
+    const key=fold(p.name)+'|'+fold(p.brand||'');
+    if(key==='|') return;
+    const e=map.get(key);
+    if(e){ e.uses++; if(date && date>e.last) e.last=date; if(!e.p.code && p.code) e.p.code=p.code; }
+    else map.set(key,{p:Object.assign({},p), uses:1, last:date||''});
+  };
+  for(const f of (db.foodFav||[])) put({code:f.code||'', name:f.name, brand:f.brand||'', kc100:f.kc100, pr100:f.pr100||0, ft100:f.ft100||0, cb100:f.cb100||0, s100:f.s100, fib100:f.fib100, qty:f.qty||'', serving:f.serving||0}, '');
+  for(const d of (db.body||[])){
+    for(const m of (d.meals||[])){
+      if(m.k100==null) continue;
+      const nm=String(m.pname||m.text||'').replace(/\s+[—-]\s+[\d.,]+\s*(g|ml|×|x).*$/i,'').trim();
+      put({code:'', name:nm, brand:'', kc100:m.k100, pr100:m.p100||0, ft100:m.f100||0, cb100:m.c100||0, s100:(m.s100!=null?m.s100:null), fib100:(m.fib100!=null?m.fib100:null), qty:'', serving:m.g||0}, d.date||'');
+    }
+  }
+  for(const code of Object.keys(db.customBarcodes||{})){ const p=customToProd(code); if(p) put(p,''); }
+  _localIdx=[...map.values()];
+  return _localIdx;
+}
+function daysAgo(d){ if(!d) return 9999; const a=new Date(d+'T00:00:00'), b=new Date(TODAY+'T00:00:00'); if(isNaN(a)) return 9999; return Math.round((b-a)/86400000); }
+function searchLocal(q, limit){
+  const out=[];
+  for(const e of localFoods()){
+    let s=scoreName(e.p.name, e.p.brand, '', q);
+    if(!s) continue;
+    s+=Math.min(20, (e.uses-1)*4);                        // oft gegessen = wahrscheinlicher
+    const da=daysAgo(e.last);
+    if(da<=7) s+=15; else if(da<=30) s+=8;                // kürzlich gegessen
+    out.push({p:e.p, s});
+  }
+  out.sort((a,b)=>b.s-a.s);
+  return out.slice(0, limit||8).map(x=>x.p);
+}
+function searchBase(q, limit){
+  const out=[];
+  for(const p of BASE_FOODS){
+    let s=scoreName(p.name, '', p._alias, q);
+    if(s>0){ if(p._prio) s+=10; out.push({p,s}); }
+  }
+  out.sort((a,b)=>b.s-a.s);
+  return out.slice(0, limit||6).map(x=>x.p);
+}
+// OFF liefert unsortiert — deshalb hier nach Relevanz nachranken und Dubletten raus.
+function rankOff(res, q, exclude){
+  const seen=new Set((exclude||[]).map(p=>fold(p.name)+'|'+fold(p.brand||'')));
+  const scored=[];
+  for(const p of (res||[])){
+    const key=fold(p.name)+'|'+fold(p.brand||'');
+    if(seen.has(key)) continue;
+    seen.add(key);
+    let s=scoreName(p.name, p.brand, '', q);
+    if(s>0){
+      if(!p.brand) s+=12;            // ohne Marke = eher das generische Produkt
+      if(p.serving>0) s+=2;
+    }
+    scored.push({p,s});
+  }
+  scored.sort((a,b)=>b.s-a.s);
+  return scored.map(x=>x.p);
+}
+
 /* ---------------- Open Food Facts: Produktsuche & Barcode ---------------- */
 const OFF='https://world.openfoodfacts.org';
 function mapProd(p){
@@ -1265,7 +1540,7 @@ async function fetchJSONRetry(u, {signal, tries=6, delay=300}={}){
   throw last||new Error('fetch fehlgeschlagen');
 }
 async function offSearch(q, signal){
-  const u=OFF+'/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=30&fields=code,product_name,brands,nutriments,quantity,serving_quantity';
+  const u=OFF+'/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=60&fields=code,product_name,brands,nutriments,quantity,serving_quantity';
   const d=await fetchJSONRetry(u,{signal});
   return (d.products||[]).map(mapProd).filter(Boolean);
 }
@@ -1289,6 +1564,7 @@ async function addFoodMeal(text, kc, pr, meta){
   const m={id:uid(), name:curMeal, text, kcal:Math.round(kc||0), protein:Math.round(pr||0), fat:ft!=null?Math.round(ft):null, carbs:cb!=null?Math.round(cb):null};
   m.k100=meta.k100; m.p100=meta.p100; m.f100=meta.f100; m.c100=meta.c100; m.g=meta.g; m.pname=meta.pname;
   e.meals.push(m);
+  invalidateFoodIdx();
   await Store.save(db); renderAll();
   toast(`${curMeal}: ${Math.round(kc||0)} kcal · ${Math.round(pr||0)} g P`);
 }
@@ -1300,9 +1576,8 @@ function pushFav(p){
 function showFavs(){
   const list=foodOv.querySelector('.prodlist');
   const favs=db.foodFav||[];
-  if(!favs.length){ list.innerHTML='<div class="empty">Tippe mind. 2 Buchstaben — oder scanne einen Barcode</div>'; return; }
-  list.innerHTML='<div class="pickgrp">Zuletzt genutzt</div>'+favs.map((p,i)=>`<button class="pickitem prod" data-f="${i}"><div class="li-t">${esc(p.name)}</div><div class="li-s">${p.brand?esc(p.brand)+' · ':''}${Math.round(p.kc100)} kcal · ${round(p.pr100,1)} g P / 100 g</div></button>`).join('');
-  list.querySelectorAll('.prod').forEach(b=>b.onclick=()=>showProdDetail(favs[+b.dataset.f]));
+  if(!favs.length){ list.innerHTML='<div class="empty">Tippen, scannen — oder aus den Grundnahrungsmitteln wählen</div>'; return; }
+  renderGroups([{title:'Zuletzt genutzt', items:favs}], list, '');
 }
 
 const foodOv=document.createElement('div'); foodOv.className='pickov'; foodOv.style.display='none';
@@ -1352,6 +1627,7 @@ async function commitCart(){
     e.meals.push({id:uid(), name:curMeal||'Mahlzeit', text:it.text||'', kcal:Math.round(it.kc||0), protein:it.pr!=null?Math.round(it.pr):0, fat:it.ft!=null?Math.round(it.ft):null, carbs:it.cb!=null?Math.round(it.cb):null, k100:it.k100, p100:it.p100, f100:it.f100, c100:it.c100, salt:it.salt!=null?it.salt:null, fiber:it.fib!=null?it.fib:null, s100:it.s100, fib100:it.fib100, g:it.g, pname:it.pname});
   }
   const n=foodCart.length; foodCart=[];
+  invalidateFoodIdx();
   await Store.save(db); renderAll(); closeFood(); toast(n+' Artikel eingetragen');
 }
 function showFree(barcode){
@@ -1413,6 +1689,7 @@ foodOv.querySelector('.scanbtn').onclick=openScan;
 { const _amt=$('#addMealType'); if(_amt) _amt.onclick=async()=>{ const nm=prompt('Name der neuen Mahlzeit (z. B. Pre-Workout)'); if(!nm||!nm.trim()) return; const name=nm.trim(); if(!db.mealTypes.includes(name)) db.mealTypes.push(name); await Store.save(db); renderMeals(); }; }
 function openFood(){
   foodCart=[];
+  invalidateFoodIdx(); lastLocal=null; curQuery='';
   foodOv.querySelector('.prodq').value='';
   const tt=foodOv.querySelector('#foodTitle'); if(tt) tt.textContent=(curMeal||'Mahlzeit')+' · hinzufügen';
   showList();
@@ -1420,36 +1697,61 @@ function openFood(){
   foodOv.style.display='flex';
   setTimeout(()=>{ const q=foodOv.querySelector('.prodq'); if(q) q.focus(); },60);
 }
-let searchTimer=null, searchAbort=null;
-function renderResults(res, list){
-  if(!res.length){ list.innerHTML='<div class="empty">Nichts gefunden</div>'; return; }
-  list.innerHTML=res.map((p,i)=>`<button class="pickitem prod" data-i="${i}"><div class="li-t">${esc(p.name)}</div><div class="li-s">${p.brand?esc(p.brand)+' · ':''}${Math.round(p.kc100)} kcal · ${round(p.pr100,1)} g P / 100 g${p.qty?' · '+esc(p.qty):''}</div></button>`).join('');
-  list.querySelectorAll('.prod').forEach(b=>b.onclick=()=>showProdDetail(res[+b.dataset.i]));
+let searchTimer=null, searchAbort=null, curQuery='', lastLocal=null;
+function prodRow(p, i){
+  const sub=(p.brand?esc(p.brand)+' · ':'')+Math.round(p.kc100)+' kcal · '+round(p.pr100||0,1)+' g P / 100 g'+(p.qty?' · '+esc(p.qty):'');
+  return `<button class="pickitem prod" data-i="${i}"><div class="li-t">${esc(p.name)}</div><div class="li-s">${sub}</div></button>`;
+}
+// Rendert mehrere Ergebnisgruppen (eigene Historie, Grundnahrungsmittel, Datenbank)
+// in eine gemeinsame Liste und verdrahtet die Klicks über einen flachen Index.
+function renderGroups(groups, list, foot){
+  const flat=[];
+  let html='';
+  for(const g of groups){
+    if(!g || !g.items || !g.items.length) continue;
+    html+='<div class="pickgrp">'+esc(g.title)+'</div>';
+    html+=g.items.map(p=>prodRow(p, flat.push(p)-1)).join('');
+  }
+  if(!html && !foot) html='<div class="empty">Nichts gefunden</div>';
+  if(foot) html+='<div class="empty">'+foot+'</div>';
+  list.innerHTML=html;
+  list.querySelectorAll('.prod').forEach(b=>b.onclick=()=>showProdDetail(flat[+b.dataset.i]));
+}
+function localGroups(q){
+  if(!lastLocal || lastLocal.q!==q) lastLocal={q, mine:searchLocal(q), base:searchBase(q)};
+  return [{title:'Deine Produkte', items:lastLocal.mine},{title:'Grundnahrungsmittel', items:lastLocal.base}];
 }
 async function runSearch(q){
   const list=foodOv.querySelector('.prodlist');
   if(searchAbort) searchAbort.abort();
   searchAbort=new AbortController();
-  list.innerHTML='<div class="empty">Suche…</div>';
+  curQuery=q;
+  const gs=localGroups(q);
+  renderGroups(gs, list, 'Datenbank wird durchsucht …');
   try{
     const res=await offSearch(q, searchAbort.signal);
-    if(foodOv.querySelector('.prodq').value.trim()!==q) return; // veraltet
-    renderResults(res, list);
+    if(curQuery!==q) return; // veraltet
+    const known=gs[0].items.concat(gs[1].items);
+    const ranked=rankOff(res, q, known);
+    renderGroups(gs.concat([{title:'Datenbank (Open Food Facts)', items:ranked}]), list, ranked.length?'':'In der Datenbank nichts Passendes gefunden');
   }catch(e){
-    if(e.name==='AbortError') return;
-    list.innerHTML='<div class="empty">Keine Verbindung zur Datenbank ('+esc(e.message||'')+') — nochmal versuchen</div>';
+    if(e.name==='AbortError' || curQuery!==q) return;
+    renderGroups(gs, list, 'Keine Verbindung zur Datenbank ('+esc(e.message||'')+') — nochmal versuchen');
   }
 }
 function onQueryInput(){
   const q=foodOv.querySelector('.prodq').value.trim();
   clearTimeout(searchTimer);
   const list=foodOv.querySelector('.prodlist');
-  if(q.length<2){ if(searchAbort) searchAbort.abort(); showFavs(); return; }
+  if(q.length<2){ if(searchAbort) searchAbort.abort(); curQuery=''; showFavs(); return; }
+  // Lokale Treffer sofort zeigen, der Netz-Call kommt gedrosselt hinterher.
+  curQuery=q;
+  renderGroups(localGroups(q), list, 'Datenbank wird durchsucht …');
   searchTimer=setTimeout(()=>runSearch(q), 350);
 }
 foodOv.querySelector('.prodq').addEventListener('input', onQueryInput);
-foodOv.querySelector('.prodgo').onclick=()=>{ const q=foodOv.querySelector('.prodq').value.trim(); if(q.length>=2) runSearch(q); };
-foodOv.querySelector('.prodq').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const q=e.target.value.trim(); if(q.length>=2) runSearch(q); } });
+foodOv.querySelector('.prodgo').onclick=()=>{ const q=foodOv.querySelector('.prodq').value.trim(); if(q.length>=2){ clearTimeout(searchTimer); runSearch(q); } };
+foodOv.querySelector('.prodq').addEventListener('keydown',e=>{ if(e.key==='Enter'){ const q=e.target.value.trim(); if(q.length>=2){ clearTimeout(searchTimer); runSearch(q); } } });
 function showProdDetail(p){
   const det=foodOv.querySelector('.proddetail');
   foodOv.querySelector('.prodlist').style.display='none';
