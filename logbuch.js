@@ -261,6 +261,21 @@ button.today{white-space:nowrap}
 .exed-info{margin-top:10px}
 .scanreticle{position:absolute;top:14%;bottom:14%;left:10%;right:10%;border:2px solid rgba(255,255,255,.5);border-radius:12px;pointer-events:none}
 .scanline{position:absolute;left:-2px;right:-2px;top:50%;height:2px;background:var(--signal);box-shadow:0 0 10px var(--signal)}
+
+/* ---- Scanner: dreht sich NICHT mit dem Geraet ----
+   Kippt man das Handy, um an einen schlecht erreichbaren Barcode zu kommen,
+   dreht der Browser die Oberflaeche mit. Hier drehen wir das Sheet um denselben
+   Winkel zurueck, damit es am Geraet klebt. Nebeneffekt und eigentlicher Zweck:
+   der Barcode bleibt waagerecht im Kamerabild, der Decoder tut sich leichter. */
+#scanOv .picksheet{transition:none}
+#scanOv.scan-rot .picksheet{
+  position:absolute;top:50%;left:50%;
+  width:min(var(--vvh,100%),580px);
+  max-height:92vw;
+  border-radius:16px;
+  transform-origin:50% 50%;
+}
+#scanOv.scan-rot .scanwrap{aspect-ratio:3/4}
 .missbox{background:var(--field);border:1px solid var(--line);border-radius:12px;padding:16px;text-align:center}
 .miss-t{font-weight:650;font-size:15px;margin-bottom:4px}
 .miss-s{font-size:12.5px;color:var(--ink-60);line-height:1.5}
@@ -1972,7 +1987,7 @@ function showProdDetail(p){
 /* ---- Barcode-Scanner ---- */
 let _zxP=null;
 function loadZX(){ if(window.ZXing) return Promise.resolve(window.ZXing); if(_zxP) return _zxP; _zxP=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js'; s.onload=()=>res(window.ZXing); s.onerror=()=>rej(new Error('ZXing load failed')); document.head.appendChild(s); }); return _zxP; }
-const scanOv=document.createElement('div'); scanOv.className='pickov'; scanOv.style.display='none';
+const scanOv=document.createElement('div'); scanOv.id='scanOv'; scanOv.className='pickov'; scanOv.style.display='none';
 scanOv.innerHTML=`<div class="picksheet">
   <div class="li-t" style="margin-bottom:8px">Barcode scannen</div>
   <div class="scanwrap"><video class="scanvid" playsinline muted></video><div class="scanreticle"><span class="scanline"></span></div></div>
@@ -1983,8 +1998,30 @@ scanOv.innerHTML=`<div class="picksheet">
 </div>`;
 root.appendChild(scanOv);
 let scanStream=null, scanRAF=null, scanZX=null, scanActive=false;
+// Winkel, um den der Browser den Inhalt beim Kippen bereits gedreht hat.
+// screen.orientation.angle ist der Standard; window.orientation ist das alte
+// iOS-Pendant mit umgekehrtem Vorzeichen und dient nur als Rueckfalloption.
+function _screenAngle(){
+  const so = window.screen && window.screen.orientation;
+  let a = (so && typeof so.angle === 'number') ? so.angle : (360 - (window.orientation||0));
+  return ((a % 360) + 360) % 360;
+}
+function syncScanRotation(){
+  if(!scanOv || scanOv.style.display === 'none') return;
+  const sheet = scanOv.querySelector('.picksheet');
+  if(!sheet) return;
+  const a = _screenAngle();
+  const quer = (a === 90 || a === 270);
+  scanOv.classList.toggle('scan-rot', quer);
+  sheet.style.transform = a ? (quer ? 'translate(-50%,-50%) rotate('+a+'deg)' : 'rotate('+a+'deg)') : '';
+}
 function stopScan(){ scanActive=false; if(scanRAF){ cancelAnimationFrame(scanRAF); scanRAF=null; } if(scanZX){ try{scanZX.reset();}catch(e){} scanZX=null; } if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; } }
-function closeScan(){ stopScan(); scanOv.style.display='none'; }
+function closeScan(){
+  stopScan();
+  scanOv.style.display='none';
+  scanOv.classList.remove('scan-rot');
+  const _sh=scanOv.querySelector('.picksheet'); if(_sh) _sh.style.transform='';
+}
 scanOv.querySelector('.scanclose').onclick=closeScan;
 scanOv.addEventListener('click', e=>{ if(e.target===scanOv) closeScan(); });
 scanOv.querySelector('.scango').onclick=()=>{ const c=scanOv.querySelector('.scancode').value.trim(); if(c) handleCode(c); };
@@ -2020,6 +2057,7 @@ async function openScan(){
   const vid=scanOv.querySelector('.scanvid'), info=scanOv.querySelector('.scaninfo');
   info.textContent='Kamera wird gestartet…';
   scanOv.style.display='flex';
+  syncScanRotation();
   scanActive=true;
   // Weg 1: nativer BarcodeDetector (Android/Chrome)
   if('BarcodeDetector' in window){
@@ -3256,12 +3294,14 @@ function syncViewport(){
   if(!vv){ de.style.setProperty('--vvh','100%'); de.style.setProperty('--vvt','0px'); return; }
   de.style.setProperty('--vvh', vv.height+'px');
   de.style.setProperty('--vvt', Math.max(0, vv.offsetTop||0)+'px');
+  syncScanRotation();
 }
 if(window.visualViewport){
   window.visualViewport.addEventListener('resize', syncViewport);
   window.visualViewport.addEventListener('scroll', syncViewport);
 }
-window.addEventListener('orientationchange', function(){ setTimeout(syncViewport,200); });
+window.addEventListener('orientationchange', function(){ setTimeout(syncViewport,200); setTimeout(syncScanRotation,220); });
+try{ window.screen.orientation.addEventListener('change', function(){ setTimeout(syncViewport,120); setTimeout(syncScanRotation,140); }); }catch(e){}
 syncViewport();
 
 /* ---------------- Start ---------------- */
