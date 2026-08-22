@@ -1903,7 +1903,7 @@ foodOv.innerHTML=`<div class="picksheet">
 root.appendChild(foodOv);
 let foodCart=[];
 const openMeals=new Set(); const openExGroups=new Set();
-function closeFood(){ foodOv.style.display='none'; foodCart=[]; }
+function closeFood(){ foodOv.style.display='none'; foodCart=[]; releaseCam(); }
 function showList(){
   foodOv.querySelector('.prodlist').style.display='block';
   foodOv.querySelector('.foodhead').style.display='flex';
@@ -2121,7 +2121,50 @@ function syncScanRotation(){
   const g = (360 - a) % 360;
   sheet.style.transform = g ? (quer ? 'translate(-50%,-50%) rotate('+g+'deg)' : 'rotate('+g+'deg)') : (quer ? 'translate(-50%,-50%)' : '');
 }
-function stopScan(){ scanActive=false; if(scanRAF){ cancelAnimationFrame(scanRAF); scanRAF=null; } if(scanZX){ try{scanZX.reset();}catch(e){} scanZX=null; } if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; } }
+// iOS merkt sich die Kamera-Erlaubnis bei Homescreen-Web-Apps nicht (bekannte
+// WebKit-Einschraenkung) — jedes getUserMedia fragt erneut. Deshalb laeuft der
+// Stream nach dem Schliessen noch kurz weiter: Wer im Laden mehrere Produkte
+// hintereinander scannt, wird nur einmal gefragt und der Scanner oeffnet sofort.
+// Freigegeben wird er nach CAM_WARM_MS oder sobald die App in den Hintergrund geht.
+const CAM_WARM_MS = 90000;
+let camWarmTimer = null;
+function releaseCam(){
+  if(camWarmTimer){ clearTimeout(camWarmTimer); camWarmTimer=null; }
+  if(scanStream){ try{ scanStream.getTracks().forEach(t=>t.stop()); }catch(e){} scanStream=null; }
+}
+function camWarmStart(){
+  if(camWarmTimer){ clearTimeout(camWarmTimer); camWarmTimer=null; }
+  if(camLive()) camWarmTimer = setTimeout(releaseCam, CAM_WARM_MS);
+  else scanStream = null;
+}
+function camLive(){
+  return !!(scanStream && scanStream.getTracks && scanStream.getTracks().some(t=>t.readyState==='live'));
+}
+async function getCam(){
+  if(camLive()){                                  // noch warm — keine neue Nachfrage
+    if(camWarmTimer){ clearTimeout(camWarmTimer); camWarmTimer=null; }
+    return scanStream;
+  }
+  releaseCam();
+  scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+  return scanStream;
+}
+try{ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) releaseCam(); }); }catch(e){}
+
+// hart=true gibt die Kamera sofort frei, sonst laeuft sie noch warm weiter.
+function stopScan(hart){
+  scanActive=false;
+  if(scanRAF){ cancelAnimationFrame(scanRAF); scanRAF=null; }
+  if(scanZX){
+    // ZXing wuerde beim reset() die Tracks unseres Streams mitstoppen — die
+    // Referenz vorher kappen, damit uns der warme Stream erhalten bleibt.
+    try{ if(!hart) scanZX.stream = undefined; }catch(e){}
+    try{ scanZX.reset(); }catch(e){}
+    scanZX=null;
+  }
+  const _v=scanOv.querySelector('.scanvid'); if(_v) _v.srcObject=null;
+  if(hart) releaseCam(); else camWarmStart();
+}
 function closeScan(){
   stopScan();
   scanOv.style.display='none';
@@ -2168,13 +2211,13 @@ async function openScan(){
   // Weg 1: nativer BarcodeDetector (Android/Chrome)
   if('BarcodeDetector' in window){
     try{
-      scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+      scanStream=await getCam();
       vid.srcObject=scanStream; await vid.play();
       info.textContent='Kamera auf den Barcode richten.';
       const det=new window.BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf']});
       const loop=async()=>{ if(!scanActive) return; try{ const cs=await det.detect(vid); if(cs&&cs.length){ handleCode(cs[0].rawValue); return; } }catch(e){} scanRAF=requestAnimationFrame(loop); };
       loop();
-    }catch(e){ info.textContent='Kamera nicht verfügbar — bitte Nummer eingeben.'; scanActive=false; }
+    }catch(e){ info.textContent='Kamera nicht verfügbar — bitte Nummer eingeben.'; scanActive=false; releaseCam(); }
     return;
   }
   // Weg 2: ZXing steuert die Kamera selbst (iOS Safari)
@@ -2183,12 +2226,22 @@ async function openScan(){
     scanZX=new ZX.BrowserMultiFormatReader();
     const cb=(result)=>{ if(result && scanActive){ scanActive=false; handleCode(result.getText()); } };
     info.textContent='Kamera auf den Barcode richten.';
+    // Erst den Stream selbst holen, dann ZXing darauf ansetzen — nur so bleibt
+    // die Kamera in unserer Hand und kann warm gehalten werden.
     try{
-      await scanZX.decodeFromConstraints({video:{facingMode:{ideal:'environment'}}}, vid, cb);
+      const st = await getCam();
+      vid.srcObject = st;
+      try{ await vid.play(); }catch(e0){}
+      if(typeof scanZX.decodeFromStream === 'function') await scanZX.decodeFromStream(st, vid, cb);
+      else await scanZX.decodeFromConstraints({video:{facingMode:{ideal:'environment'}}}, vid, cb);
     }catch(e1){
-      await scanZX.decodeFromVideoDevice(undefined, vid, cb);
+      try{
+        await scanZX.decodeFromConstraints({video:{facingMode:{ideal:'environment'}}}, vid, cb);
+      }catch(e2){
+        await scanZX.decodeFromVideoDevice(undefined, vid, cb);
+      }
     }
-  }catch(e){ info.textContent='Kamera nicht verfügbar — bitte Nummer eingeben.'; scanActive=false; }
+  }catch(e){ info.textContent='Kamera nicht verfügbar — bitte Nummer eingeben.'; scanActive=false; releaseCam(); }
 }
 const _psb=$('#prodSearchBtn'); if(_psb) _psb.onclick=openFood;
 const _bcb=$('#barcodeBtn'); if(_bcb) _bcb.onclick=openScan;
