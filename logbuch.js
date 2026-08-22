@@ -134,7 +134,7 @@ function tok(name, dark){
   return m ? m[1].trim() : "#000";
 }
 const CSS = "\n:host{\n  display:block; min-height:100vh;\n  background:var(--bg); color:var(--ink);\n  font-family:var(--sans); font-size:15px; line-height:1.5;\n  padding-bottom:calc(86px + env(safe-area-inset-bottom));\n  -webkit-font-smoothing:antialiased;\n}\n:host([paper=\"true\"]){\n  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);\n  background-size:22px 22px;\n}\n*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}\n.wrap{max-width:580px;margin:0 auto;padding:0 16px}\n\nheader{\n  padding:calc(16px + env(safe-area-inset-top)) 16px 13px;\n  border-bottom:1px solid var(--line);\n  background:color-mix(in srgb,var(--bg) 86%,transparent);\n  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);\n  position:sticky;top:0;z-index:20;\n}\nheader .inner{max-width:580px;margin:0 auto;display:flex;align-items:baseline;justify-content:space-between}\nh1{font:650 17px/1 var(--sans);letter-spacing:-.01em;margin:0}\nh1::before{content:\"\";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:8px;vertical-align:1px}\n.today{font-family:var(--mono);font-size:12px;color:var(--ink-60);letter-spacing:.02em}\n\n.card{\n  background:var(--card);\n  border:1px solid var(--line);\n  border-radius:var(--r);\n  padding:18px;\n  margin:14px 0;\n  box-shadow:0 1px 2px rgba(15,23,32,.04);\n}\n.card > h2{\n  font:600 11px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;\n  color:var(--ink-60);margin:0 0 14px;\n}\n.hint{font-size:12.5px;color:var(--ink-60);margin:8px 0 0}\n:host([compact=\"true\"]) .card{padding:13px;margin:10px 0}\n\nlabel.f{display:block;font:550 11px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-60);margin:0 0 6px}\ninput,select,textarea,button{font-family:inherit;font-size:16px;color:var(--ink)}\ninput,select,textarea{\n  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--ri);\n  background:var(--field);appearance:none;\n}\ninput[type=number]{font-family:var(--mono);font-variant-numeric:tabular-nums}\ninput:focus,select:focus,textarea:focus{\n  outline:none;border-color:var(--accent);\n  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent);\n}\nbutton:focus-visible{outline:2px solid var(--accent);outline-offset:2px}\n.row{display:flex;gap:10px}\n.row > *{flex:1;min-width:0}\n\nbutton{cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);\n  padding:11px 16px;border-radius:var(--ri);font-weight:600;letter-spacing:.01em}\nbutton.ghost{background:transparent;color:var(--ink);border-color:var(--line)}\nbutton.tiny{padding:7px 10px;font-size:13px}\nbutton.link{background:none;border:0;padding:4px 0;font-size:13px;color:var(--ink-60);font-weight:500}\nbutton.link.warn{color:var(--signal)}\nbutton:active{transform:translateY(1px)}\n\n.block{\n  border:1px solid var(--line);border-radius:var(--r);background:var(--card);\n  padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(15,23,32,.04);\n}\n.block.swapped{box-shadow:inset 3px 0 0 var(--ochre),0 1px 2px rgba(15,23,32,.04)}\n.block-head{display:flex;gap:8px;align-items:center;margin-bottom:10px}\n.block-head select{flex:1;font-weight:600}\n.block-head .rm{flex:none;width:38px;padding:8px 0;text-align:center;border:0;\n  background:transparent;color:var(--ink-30);font-weight:400;border-radius:var(--ri)}\n.swap-tag{font:600 9px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ochre);margin:-4px 0 8px}\n.ref{font-family:var(--mono);font-size:11.5px;color:var(--ink-60);margin:0 0 12px;word-break:break-word}\n\n.setrow{display:flex;gap:8px;align-items:center;margin-bottom:8px}\n.setno{font-family:var(--mono);font-size:12px;color:var(--ink-30);width:20px;flex:none;text-align:right}\n.setrow input{flex:1}\n.setrow .del{flex:none;width:38px;padding:9px 0;text-align:center;border:0;\n  background:transparent;color:var(--ink-30);font-weight:400;border-radius:var(--ri)}\n.block input.note{margin-top:4px;font-size:14px}\n\n.readout{\n  background:var(--card);border:1px solid var(--line);border-radius:var(--r);\n  padding:18px;margin:14px 0;box-shadow:0 1px 2px rgba(15,23,32,.04);\n  display:flex;align-items:flex-end;justify-content:space-between;gap:14px;\n}\n.readout .big{font-family:var(--mono);font-size:38px;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:-.03em;color:var(--ink)}\n.readout .big span{font-size:14px;color:var(--ink-30);letter-spacing:.04em}\n.readout .lab{font:550 10px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-30);margin-bottom:8px}\n.readout .side{text-align:right}\n.readout .side div{font-family:var(--mono);font-size:12.5px;color:var(--ink-60);font-variant-numeric:tabular-nums;margin-top:2px}\n.up{color:var(--teal)!important}.down{color:var(--signal)!important}\n\n.stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}\n.stat{background:var(--card);padding:12px 13px}\n.stat .k{font:550 10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60)}\n.stat .v{font-family:var(--mono);font-size:19px;font-variant-numeric:tabular-nums;margin-top:6px}\n.stat .s{font-size:11.5px;color:var(--ink-30);font-family:var(--mono)}\n\n.legend{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 0;font-size:11.5px;color:var(--ink-60)}\n.legend i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:5px;border-radius:1px}\n\nul.list{list-style:none;margin:0;padding:0}\nul.list li{border-top:1px solid var(--grid);padding:11px 0;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}\nul.list li:first-child{border-top:0}\n.li-main{min-width:0;flex:1}\n.li-t{font-weight:600;font-size:14px}\n.li-s{font-family:var(--mono);font-size:12px;color:var(--ink-60);margin-top:3px;word-break:break-word}\n.li-d{font-family:var(--mono);font-size:11px;color:var(--ink-30);flex:none;text-align:right}\n.pr{color:var(--signal);font-weight:700;font-size:10px;letter-spacing:.14em;text-transform:uppercase}\n.daytag{display:inline-block;font:600 9px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;\n  color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent);border-radius:99px;padding:3px 7px;margin-left:6px;vertical-align:1px}\n\n.split{border:1px solid var(--line);border-radius:var(--r);background:var(--card);margin-bottom:12px;overflow:hidden}\n.split-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--field)}\n.split-head .t{font-weight:650;font-size:14px}\n.day{border-top:1px solid var(--grid);padding:11px 14px}\n.day:first-of-type{border-top:0}\n.day-head{display:flex;align-items:center;justify-content:space-between;gap:8px}\n.day-head .t{font-weight:600;font-size:14px}\n.day-ex{font-family:var(--mono);font-size:12px;color:var(--ink-60);margin-top:3px}\n.day-edit{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}\n.day-edit .exline{display:flex;align-items:center;gap:8px;padding:5px 0}\n.day-edit .exline .n{flex:1;font-size:14px}\n.day-edit .exline button{flex:none}\n\n.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}\n.cal-head .t{font:600 13px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase}\n.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}\n.cal-dow{font:550 9px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-30);text-align:center;padding:4px 0 6px}\n.cal-day{\n  position:relative;aspect-ratio:1;border:1px solid transparent;border-radius:9px;\n  background:var(--field);padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;\n  font-family:var(--mono);font-size:13px;font-weight:400;color:var(--ink);letter-spacing:0;\n}\n.cal-day.today{border-color:var(--accent)}\n.cal-day.sel{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}\n.cal-dots{display:flex;gap:3px;height:4px}\n.cal-dots i{width:4px;height:4px;border-radius:50%;display:block}\n.cal-sec{border-top:1px solid var(--grid);padding:10px 0}\n.cal-sec:first-child{border-top:0;padding-top:0}\n.cal-sec:last-child{padding-bottom:0}\n.cal-sec-t{font-weight:600;font-size:14px;margin-bottom:4px}\n.cal-sec .li-s{margin-top:3px}\n\nnav{\n  position:fixed;left:0;right:0;bottom:0;z-index:30;\n  background:color-mix(in srgb,var(--bg) 88%,transparent);\n  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);\n  border-top:1px solid var(--line);\n  padding-bottom:env(safe-area-inset-bottom);\n}\nnav .inner{max-width:580px;margin:0 auto;display:flex}\nnav button{\n  flex:1;background:none;border:0;color:var(--ink-30);\n  padding:14px 0 15px;font:600 10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;\n  border-radius:0;\n}\nnav button[aria-current=page]{color:var(--accent);font-weight:700}\nnav button:active{transform:none}\n\n.view{display:none}.view.on{display:block}\nsvg.chart{display:block;width:100%;height:auto;overflow:visible}\n.empty{color:var(--ink-30);font-size:13px;text-align:center;padding:24px 0;font-family:var(--mono)}\n.toast{\n  position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom));\n  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;\n  font-size:13px;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;font-family:var(--mono);\n  max-width:86vw;text-align:center;box-shadow:0 6px 24px rgba(15,23,32,.25);\n}\n.toast.on{opacity:1}\n@media (prefers-reduced-motion:reduce){*{transition:none!important}}\n\n/* 1b Bottom-Nav mit Icons */\nnav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}\nnav .inner{display:flex;max-width:580px;margin:0 auto;padding:8px 6px calc(8px + env(safe-area-inset-bottom))}\nnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;cursor:pointer;padding:6px 2px;min-height:46px;color:var(--ink-30);font:600 10.5px/1 var(--sans);letter-spacing:.01em}\nnav button svg{width:22px;height:22px;display:block}\nnav button[aria-current=\"page\"]{color:var(--accent)}\n.hicon{background:none;border:1px solid var(--line);border-radius:99px;padding:7px 10px;min-height:34px;font-size:14px;color:var(--ink-60);cursor:pointer}\nh1{cursor:pointer}\n.seclab{font:600 10px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-30);margin:22px 0 12px 2px}\n.mac-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}\n.mac-t{font:650 15px var(--sans)}\n.pill{display:inline-flex;background:var(--field);border:1px solid var(--line);border-radius:99px;padding:4px 11px;font:600 11.5px var(--sans);color:var(--ink-60);cursor:pointer}\n.more{width:100%;background:none;border:0;color:var(--ink-60);font:600 12px var(--sans);padding:8px;cursor:pointer}\n.meals-head{display:flex;align-items:center;justify-content:space-between}\n.meals-head .t{font:650 15px var(--sans)}\n.meals-head .k{font-family:var(--mono);font-size:13px;color:var(--ink-60)}\n";
-const MARKUP = "<header><div class=\"inner\">\n  <h1 id=\"homeBtn\">Logbuch</h1>\n  <div class=\"head-right\"><button class=\"themetog\" id=\"themeTog\" aria-label=\"Design: hell / dunkel / automatisch\" title=\"Design wechseln\"></button><button class=\"today\" id=\"today\" aria-label=\"Kalender\"></button></div>\n</div></header>\n\n<main class=\"wrap\">\n\n<!-- ============ TRAINING ============ -->\n<section class=\"view\" id=\"v-log\">\n  <div class=\"card compact\">\n    <div class=\"cardhead\"><h2>Wochenziele</h2><button class=\"link\" id=\"goalEdit\">anpassen</button></div>\n    <div id=\"goals\"></div>\n  </div>\n\n  <div class=\"card\" id=\"unitCard\">\n    <div class=\"cardhead\"><h2>Einheit</h2><button class=\"pill\" id=\"unitPill\">Freies Training</button></div>\n    <div id=\"unitSetup\" style=\"display:none\">\n      <div class=\"row\" style=\"margin-bottom:10px\">\n        <div style=\"flex:2\"><label class=\"f\" for=\"daySel\">Trainingstag</label><select id=\"daySel\"></select></div>\n        <div style=\"flex:1\"><label class=\"f\" for=\"wdate\">Datum</label><input type=\"date\" id=\"wdate\"></div>\n      </div>\n    </div>\n    <p class=\"hint\" id=\"dayHint\" style=\"margin:0 0 12px\"></p>\n    <div id=\"blocks\"></div>\n    <button class=\"ghost\" id=\"addBlock\" style=\"width:100%\">\uff0b \u00dcbung hinzuf\u00fcgen</button>\n    <button id=\"saveW\" style=\"width:100%;margin-top:10px\">Einheit speichern</button>\n  </div>\n\n  <div class=\"card\">\n    <h2>Letzte Einheiten</h2>\n    <ul class=\"list\" id=\"wlist\"></ul>\n    <button class=\"ghost tiny\" id=\"wlistMore\" style=\"width:100%;margin-top:10px;display:none\">Mehr anzeigen</button>\n  </div>\n</section>\n\n<!-- ============ PLAN ============ -->\n<section class=\"view\" id=\"v-plan\">\n  <div class=\"card\">\n    <h2>Splits &amp; Trainingstage</h2>\n    <p class=\"hint\" style=\"margin:0 0 12px\">Lege einen Split an (z. B. Push / Pull / Legs), darin die Trainingstage mit ihren \u00dcbungen. Beim Loggen wird der Tag vorausgef\u00fcllt.</p>\n    <div id=\"splits\"></div>\n    <button class=\"ghost\" id=\"addSplit\" style=\"width:100%\">\uff0b Split anlegen</button>\n  </div>\n\n  <div class=\"card\">\n    <h2>\u00dcbungskatalog</h2>\n    <ul class=\"list\" id=\"exlist\"></ul>\n    <button class=\"ghost tiny\" id=\"addExCat\" style=\"width:100%;margin-top:10px\">\uff0b \u00dcbung anlegen</button>\n  </div>\n</section>\n\n<!-- ============ K\u00d6RPER & ZIEL ============ -->\n<section class=\"view on\" id=\"v-body\">\n\n  <div class=\"grid2\">\n    <div class=\"card wcard\" id=\"weightCard\"></div>\n    <div class=\"card ringcard\" id=\"ringCard\"></div>\n  </div>\n\n  <div class=\"card\" id=\"macroCard\">\n    <div class=\"mac-head\"><span class=\"mac-t\">Makros</span><button class=\"pill\" id=\"phasePill\"></button></div>\n    <div id=\"macroBars\"></div>\n    <button class=\"more\" id=\"macroMore\"></button>\n    <div id=\"macroExtra\"></div>\n    <div class=\"tmeta\" id=\"targetMeta\"></div>\n  </div>\n\n  <div class=\"card meals\">\n    <div class=\"meals-head\"><span class=\"t\">Mahlzeiten heute</span><span class=\"k\" id=\"mealTotal\"></span></div>\n    <ul class=\"list\" id=\"mealList\"></ul>\n    <button class=\"ghost tiny\" id=\"addMealType\" style=\"width:100%;margin-top:12px\">\uff0b Weitere Mahlzeit</button>\n  </div>\n\n  <div class=\"quickin\">\n    <input type=\"date\" id=\"bdate\" aria-label=\"Datum\">\n    <input type=\"number\" id=\"bw\" step=\"0.1\" inputmode=\"decimal\" placeholder=\"kg\" aria-label=\"Gewicht in kg\">\n    <input type=\"number\" id=\"steps\" step=\"100\" inputmode=\"numeric\" placeholder=\"Schritte\" aria-label=\"Schritte\">\n    <button class=\"qsave\" id=\"saveB\">Sichern</button>\n  </div>\n\n</section>\n\n<!-- ============ ANALYSE ============ -->\n<section class=\"view\" id=\"v-an\">\n  <div class=\"seg ansub-seg\" id=\"anSub\"><button data-s=\"koerper\" aria-pressed=\"true\">K\u00f6rper</button><button data-s=\"kraft\" aria-pressed=\"false\">Kraft</button><button data-s=\"ernaehrung\" aria-pressed=\"false\">Ern\u00e4hrung</button></div>\n\n  <div class=\"ansub\" data-sub=\"koerper\">\n    <div class=\"card\">\n      <h2>Gewicht</h2>\n      <div class=\"pickchips anperiod\" style=\"margin:0 0 12px\"></div>\n      <div class=\"wsel\" id=\"weightSel\"></div>\n      <div id=\"c-weight\"></div>\n      <div class=\"legend\"><span><i style=\"background:var(--blue)\"></i>Gewicht pro Tag \u00b7 Linie ziehen</span></div>\n      <div class=\"aninsight\" id=\"i-weight\"></div>\n      <div class=\"stats\" style=\"margin-top:14px\" id=\"bodyStats\"></div>\n    </div>\n  </div>\n\n  <div class=\"ansub\" data-sub=\"kraft\" style=\"display:none\">\n    <div class=\"card\">\n      <h2>Kraftverlauf</h2>\n      <div class=\"pickchips anperiod\" style=\"margin:8px 0 12px\"></div>\n      <label class=\"f\">\u00dcbung</label>\n      <button class=\"ghost expick\" id=\"anExBtn\" style=\"width:100%;margin-bottom:14px\"></button>\n      <div id=\"c-str\"></div>\n      <div class=\"legend\"><span><i style=\"background:var(--ink)\"></i>e1RM (kg)</span><span><i style=\"background:var(--mc)\"></i>Volumen pro Einheit (kg)</span></div>\n      <div class=\"aninsight\" id=\"i-str\"></div>\n      <div class=\"stats\" style=\"margin-top:14px\" id=\"exStats\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Kraft vs. K\u00f6rpergewicht</h2>\n      <p class=\"hint\" style=\"margin:0 0 12px\">Beides auf den ersten Wert normiert (= 100). Divergieren die Linien, verlierst du Gewicht ohne Kraft \u2014 oder umgekehrt.</p>\n      <div id=\"c-rel\"></div>\n      <div class=\"legend\"><span><i style=\"background:var(--blue)\"></i>K\u00f6rpergewicht</span><span><i style=\"background:var(--ink)\"></i>e1RM</span><span><i style=\"background:var(--signal)\"></i>Relative Kraft</span></div>\n      <div class=\"stats\" style=\"margin-top:14px\" id=\"relStats\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Muskelgruppen-Balance</h2>\n      <p class=\"hint\" style=\"margin:0 0 12px\">S\u00e4tze pro Muskelgruppe im Zeitraum.</p>\n      <div id=\"muscleBal\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Wochenvolumen gesamt</h2>\n      <div id=\"c-vol\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Konsistenz</h2>\n      <div class=\"stats\" id=\"consist\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Rekorde im Zeitraum</h2>\n      <ul class=\"list\" id=\"prlog\"></ul>\n    </div>\n  </div>\n\n  <div class=\"ansub\" data-sub=\"ernaehrung\" style=\"display:none\">\n    <div class=\"card\">\n      <h2>Kalorien vs. Ziel</h2>\n      <div class=\"pickchips anperiod\" style=\"margin:8px 0 12px\"></div>\n      <div id=\"c-kcaltarget\"></div>\n      <p class=\"hint\" id=\"kcalCoverage\" style=\"margin:8px 0 0\"></p>\n      <div class=\"aninsight\" id=\"i-kcal\"></div>\n      <div class=\"stats\" style=\"margin-top:14px\" id=\"kcalStats\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Makro-Verteilung</h2>\n      <div id=\"macroSplit\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Schritte</h2>\n      <div id=\"c-steps\"></div>\n      <div class=\"stats\" style=\"margin-top:14px\" id=\"stepStats\"></div>\n    </div>\n  </div>\n</section>\n\n<!-- ============ DATEN ============ -->\n<section class=\"view\" id=\"v-data\">\n  <div class=\"card\">\n    <div class=\"cardhead\"><h2>\u00dcbersicht</h2><span class=\"cardmeta\" id=\"dataSince\"></span></div>\n    <div class=\"tiles\" id=\"dataTiles\"></div>\n  </div>\n\n  <div class=\"card\">\n    <h2>Sicherung</h2>\n    <p class=\"hint\" style=\"margin:0 0 12px\">Vollst\u00e4ndiges JSON-Backup aller Daten. Regelm\u00e4\u00dfig exportieren \u2014 es liegt sonst nur lokal im Browser.</p>\n    <div class=\"row\">\n      <button id=\"expJson\">Backup exportieren</button>\n      <button class=\"ghost\" id=\"impJsonBtn\">Backup einspielen</button>\n    </div>\n    <input type=\"file\" id=\"impJson\" accept=\".json\" style=\"display:none\">\n    <button class=\"ghost tiny\" id=\"expCsv\" style=\"width:100%;margin-top:10px\">Als CSV exportieren</button>\n    <p class=\"hint\" id=\"backupWarn\" style=\"margin:10px 0 0;display:none\"></p>\n  </div>\n\n  <div class=\"card\">\n    <h2>Import</h2>\n    <div class=\"improw\">\n      <span class=\"impic\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3v10M8 9l4 4 4-4M5 17v3h14v-3\"></path></svg></span>\n      <div class=\"impmain\"><div class=\"impt\">Gewicht / CSV</div><div class=\"imps\">Renpho- oder eigener CSV-Export</div></div>\n      <button class=\"ghost tiny\" data-pick=\"csvFile\">Datei</button>\n    </div>\n    <div class=\"improw\">\n      <span class=\"impic\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 3v8a2 2 0 004 0V3M8 11v10M17 3c-1.5 2-2 4-2 6h4c0-2-.5-4-2-6zM17 9v12\"></path></svg></span>\n      <div class=\"impmain\"><div class=\"impt\">Food-Diary</div><div class=\"imps\">kcal &amp; Protein pro Mahlzeit</div></div>\n      <button class=\"ghost tiny\" data-pick=\"csvFile\">Datei</button>\n    </div>\n    <div class=\"improw\">\n      <span class=\"impic\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 3h9l4 4v14H6zM15 3v4h4M9 12h7M9 16h5\"></path></svg></span>\n      <div class=\"impmain\"><div class=\"impt\">Trainings-Notizen</div><div class=\"imps\">Apple-Notes-HTML mit S\u00e4tzen</div></div>\n      <button class=\"ghost tiny\" data-pick=\"noteFiles\">Datei</button>\n    </div>\n    <input type=\"file\" id=\"csvFile\" accept=\".csv,.xlsx,.xls,text/csv,text/plain\" style=\"display:none\">\n    <input type=\"file\" id=\"noteFiles\" accept=\".html,.htm,text/html\" multiple style=\"display:none\">\n    <div id=\"csvMap\" style=\"display:none;margin-top:12px\">\n      <div class=\"row\" style=\"margin-bottom:8px\">\n        <div><label class=\"f\">Datum</label><select id=\"mapDate\"></select></div>\n        <div><label class=\"f\">Gewicht</label><select id=\"mapW\"></select></div>\n      </div>\n      <div class=\"row\">\n        <div><label class=\"f\">Kalorien</label><select id=\"mapK\"></select></div>\n        <div><label class=\"f\">Protein</label><select id=\"mapP\"></select></div>\n      </div>\n      <button id=\"csvGo\" style=\"width:100%;margin-top:12px\">Importieren</button>\n    </div>\n    <div id=\"csvInfo\" class=\"hint\"></div>\n    <div id=\"notePreview\" style=\"display:none;margin-top:12px\"></div>\n    <button id=\"noteImport\" style=\"width:100%;margin-top:10px;display:none\">Importieren</button>\n  </div>\n\n  <div class=\"card profcard\" id=\"profileCard\">\n    <h2>Profil</h2>\n    <div class=\"profrow\">\n      <span class=\"proflab\">Geschlecht</span>\n      <div class=\"phaseseg\" id=\"sexSeg\" role=\"group\" aria-label=\"Geschlecht\"><button data-sex=\"m\" aria-pressed=\"true\">M\u00e4nnlich</button><button data-sex=\"w\">Weiblich</button></div>\n    </div>\n    <div class=\"profrow\">\n      <span class=\"proflab\">Alter</span>\n      <input type=\"number\" id=\"pAge\" class=\"profnum\" inputmode=\"numeric\" min=\"10\" max=\"100\" step=\"1\" placeholder=\"\u2014\">\n      <span class=\"profunit\">Jahre</span>\n      <span class=\"proflab\" style=\"margin-left:14px\">Gr\u00f6\u00dfe</span>\n      <input type=\"number\" id=\"pHeight\" class=\"profnum\" inputmode=\"numeric\" min=\"120\" max=\"230\" step=\"1\" placeholder=\"\u2014\">\n      <span class=\"profunit\">cm</span>\n    </div>\n    <p class=\"hint\" id=\"profHint\" style=\"margin:8px 0 0\"></p>\n  </div>\n\n\n  <div class=\"card\">\n    <h2>Als App installieren</h2>\n    <p class=\"hint\" style=\"margin:0\">Safari \u00f6ffnen \u2192 Teilen-Symbol \u2192 \u201eZum Home-Bildschirm\". Danach startet das Logbuch im Vollbild mit eigenem Icon und funktioniert offline.</p>\n  </div>\n\n  <div class=\"card\">\n    <h2>Zur\u00fccksetzen</h2>\n    <button class=\"ghost\" id=\"wipe\" style=\"width:100%;color:var(--signal);border-color:var(--signal)\">Alle Daten l\u00f6schen</button>\n  </div>\n</section>\n\n</main>\n\n<nav><div class=\"inner\"><button data-v=\"log\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 8h2v8H4zM18 8h2v8h-2zM6 11h12v2H6z\"></path></svg><span>Training</span></button><button data-v=\"plan\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 4h14v16H5zM8 2v4M16 2v4M5 9h14\"></path></svg><span>Plan</span></button><button data-v=\"body\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3a2.4 2.4 0 100 4.8A2.4 2.4 0 0012 3zM7 21v-5l-2-1 1-5h4l3 0l1 5-2 1v5\"></path></svg><span>K\u00f6rper</span></button><button data-v=\"an\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-7\"></path></svg><span>Analyse</span></button><button data-v=\"data\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 6c0-1.6 3.1-3 7-3s7 1.4 7 3-3.1 3-7 3-7-1.4-7-3zM5 6v6c0 1.6 3.1 3 7 3s7-1.4 7-3V6M5 12v6c0 1.6 3.1 3 7 3s7-1.4 7-3v-6\"></path></svg><span>Daten</span></button></div></nav>\n\n<div class=\"traintimer\" id=\"trainTimer\" style=\"display:none\"><div class=\"tt-item\"><span class=\"tt-lab\">Einheit</span><span class=\"tt-val\" id=\"ttSession\">00:00</span></div><div class=\"tt-item\"><span class=\"tt-lab\">Pause</span><span class=\"tt-val\" id=\"ttRest\">00:00</span></div><button class=\"link\" id=\"ttStop\">Stopp</button></div>\n\n<div class=\"pickov\" id=\"goalOv\" style=\"display:none\">\n  <div class=\"picksheet\">\n    <div class=\"foodtitle\">Kalorienziel</div>\n    <div class=\"phaserow\">\n      <span class=\"phaselab\">Phase</span>\n      <div class=\"phaseseg\" id=\"phaseSeg\" role=\"group\" aria-label=\"Phase\"><button data-phase=\"maintain\" aria-pressed=\"true\">Maintain</button><button data-phase=\"cut\">Cut</button><button data-phase=\"bulk\">Bulk</button></div>\n    </div>\n    <div id=\"nutriBars\"></div>\n    <div class=\"goalmeta\" id=\"goalMeta\"></div>\n    <button class=\"ghost tiny\" id=\"nutriEdit\" style=\"width:100%;margin-top:10px\">Protein-Ziel \u00e4ndern</button>\n    <button class=\"ghost pickclose\" id=\"goalClose\">Schlie\u00dfen</button>\n  </div>\n</div>\n\n<div class=\"toast\" id=\"toast\"></div>\n\n";
+const MARKUP = "<header><div class=\"inner\">\n  <h1 id=\"homeBtn\">Logbuch</h1>\n  <div class=\"head-right\"><button class=\"themetog\" id=\"themeTog\" aria-label=\"Design: hell / dunkel / automatisch\" title=\"Design wechseln\"></button><button class=\"today\" id=\"today\" aria-label=\"Kalender\"></button></div>\n</div></header>\n\n<main class=\"wrap\">\n\n<!-- ============ TRAINING ============ -->\n<section class=\"view\" id=\"v-log\">\n  <div class=\"card compact\">\n    <div class=\"cardhead\"><h2>Wochenziele</h2><button class=\"link\" id=\"goalEdit\">anpassen</button></div>\n    <div id=\"goals\"></div>\n  </div>\n\n  <div class=\"card\" id=\"unitCard\">\n    <div class=\"cardhead\"><h2>Einheit</h2><button class=\"pill\" id=\"unitPill\">Freies Training</button></div>\n    <div id=\"unitSetup\" style=\"display:none\">\n      <div class=\"row\" style=\"margin-bottom:10px\">\n        <div style=\"flex:2\"><label class=\"f\" for=\"daySel\">Trainingstag</label><select id=\"daySel\"></select></div>\n        <div style=\"flex:1\"><label class=\"f\" for=\"wdate\">Datum</label><input type=\"date\" id=\"wdate\"></div>\n      </div>\n    </div>\n    <p class=\"hint\" id=\"dayHint\" style=\"margin:0 0 12px\"></p>\n    <div id=\"blocks\"></div>\n    <button class=\"ghost\" id=\"addBlock\" style=\"width:100%\">\uff0b \u00dcbung hinzuf\u00fcgen</button>\n    <button id=\"saveW\" style=\"width:100%;margin-top:10px\">Einheit speichern</button>\n  </div>\n\n  <div class=\"card\">\n    <h2>Letzte Einheiten</h2>\n    <ul class=\"list\" id=\"wlist\"></ul>\n    <button class=\"ghost tiny\" id=\"wlistMore\" style=\"width:100%;margin-top:10px;display:none\">Mehr anzeigen</button>\n  </div>\n</section>\n\n<!-- ============ PLAN ============ -->\n<section class=\"view\" id=\"v-plan\">\n  <div class=\"card\">\n    <h2>Splits &amp; Trainingstage</h2>\n    <p class=\"hint\" style=\"margin:0 0 12px\">Lege einen Split an (z. B. Push / Pull / Legs), darin die Trainingstage mit ihren \u00dcbungen. Beim Loggen wird der Tag vorausgef\u00fcllt.</p>\n    <div id=\"splits\"></div>\n    <button class=\"ghost\" id=\"addSplit\" style=\"width:100%\">\uff0b Split anlegen</button>\n  </div>\n\n  <div class=\"card\">\n    <h2>\u00dcbungskatalog</h2>\n    <ul class=\"list\" id=\"exlist\"></ul>\n    <button class=\"ghost tiny\" id=\"addExCat\" style=\"width:100%;margin-top:10px\">\uff0b \u00dcbung anlegen</button>\n  </div>\n</section>\n\n<!-- ============ K\u00d6RPER & ZIEL ============ -->\n<section class=\"view on\" id=\"v-body\">\n\n  <div class=\"grid2\">\n    <div class=\"card wcard\" id=\"weightCard\"></div>\n    <div class=\"card ringcard\" id=\"ringCard\"></div>\n  </div>\n\n  <div class=\"card\" id=\"macroCard\">\n    <div class=\"mac-head\"><span class=\"mac-t\">Makros</span><button class=\"pill\" id=\"phasePill\"></button></div>\n    <div id=\"macroBars\"></div>\n    <button class=\"more\" id=\"macroMore\"></button>\n    <div id=\"macroExtra\"></div>\n    <div class=\"tmeta\" id=\"targetMeta\"></div>\n  </div>\n\n  <div class=\"card\" id=\"waterCard\"></div>\n\n  <div class=\"card\" id=\"measCard\"></div>\n\n  <div class=\"card\" id=\"noteCard\">\n    <div class=\"meals-head\" style=\"margin-bottom:10px\"><span class=\"t\">Notiz zum Tag</span><span class=\"k\" id=\"noteMeta\"></span></div>\n    <textarea id=\"dayNote\" rows=\"2\" placeholder=\"Schlaf, Stress, Krankheit, Reisetag \u2026 \u2014 erkl\u00e4rt sp\u00e4ter die Ausrei\u00dfer\"></textarea>\n  </div>\n\n  <div class=\"card meals\">\n    <div class=\"meals-head\"><span class=\"t\">Mahlzeiten heute</span><span class=\"k\" id=\"mealTotal\"></span></div>\n    <ul class=\"list\" id=\"mealList\"></ul>\n    <button class=\"ghost tiny\" id=\"addMealType\" style=\"width:100%;margin-top:12px\">\uff0b Weitere Mahlzeit</button>\n  </div>\n\n  <div class=\"quickin\">\n    <input type=\"date\" id=\"bdate\" aria-label=\"Datum\">\n    <input type=\"number\" id=\"bw\" step=\"0.1\" inputmode=\"decimal\" placeholder=\"kg\" aria-label=\"Gewicht in kg\">\n    <input type=\"number\" id=\"steps\" step=\"100\" inputmode=\"numeric\" placeholder=\"Schritte\" aria-label=\"Schritte\">\n    <button class=\"qsave\" id=\"saveB\">Sichern</button>\n  </div>\n\n</section>\n\n<!-- ============ ANALYSE ============ -->\n<section class=\"view\" id=\"v-an\">\n  <div class=\"seg ansub-seg\" id=\"anSub\"><button data-s=\"koerper\" aria-pressed=\"true\">K\u00f6rper</button><button data-s=\"kraft\" aria-pressed=\"false\">Kraft</button><button data-s=\"ernaehrung\" aria-pressed=\"false\">Ern\u00e4hrung</button></div>\n\n  <div class=\"ansub\" data-sub=\"koerper\">\n    <div class=\"card\">\n      <h2>Gewicht</h2>\n      <div class=\"pickchips anperiod\" style=\"margin:0 0 12px\"></div>\n      <div class=\"wsel\" id=\"weightSel\"></div>\n      <div id=\"c-weight\"></div>\n      <div class=\"legend\"><span><i style=\"background:var(--blue)\"></i>Gewicht pro Tag \u00b7 Linie ziehen</span></div>\n      <div class=\"aninsight\" id=\"i-weight\"></div>\n      <div class=\"stats\" style=\"margin-top:14px\" id=\"bodyStats\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Umf\u00e4nge</h2>\n      <p class=\"hint\" style=\"margin:0 0 12px\">Im Cut oft aussagekr\u00e4ftiger als die Waage \u2014 die Waage misst auch Wasser und Darminhalt.</p>\n      <div id=\"c-meas\"></div>\n      <div class=\"legend\" id=\"measLegend\"></div>\n      <div class=\"stats\" style=\"margin-top:14px\" id=\"measStats\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Wasser</h2>\n      <div id=\"c-water\"></div>\n      <div class=\"stats\" style=\"margin-top:14px\" id=\"waterStats\"></div>\n    </div>\n  </div>\n\n  <div class=\"ansub\" data-sub=\"kraft\" style=\"display:none\">\n    <div class=\"card\">\n      <h2>Kraftverlauf</h2>\n      <div class=\"pickchips anperiod\" style=\"margin:8px 0 12px\"></div>\n      <label class=\"f\">\u00dcbung</label>\n      <button class=\"ghost expick\" id=\"anExBtn\" style=\"width:100%;margin-bottom:14px\"></button>\n      <div id=\"c-str\"></div>\n      <div class=\"legend\"><span><i style=\"background:var(--ink)\"></i>e1RM (kg)</span><span><i style=\"background:var(--mc)\"></i>Volumen pro Einheit (kg)</span></div>\n      <div class=\"aninsight\" id=\"i-str\"></div>\n      <div class=\"stats\" style=\"margin-top:14px\" id=\"exStats\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Kraft vs. K\u00f6rpergewicht</h2>\n      <p class=\"hint\" style=\"margin:0 0 12px\">Beides auf den ersten Wert normiert (= 100). Divergieren die Linien, verlierst du Gewicht ohne Kraft \u2014 oder umgekehrt.</p>\n      <div id=\"c-rel\"></div>\n      <div class=\"legend\"><span><i style=\"background:var(--blue)\"></i>K\u00f6rpergewicht</span><span><i style=\"background:var(--ink)\"></i>e1RM</span><span><i style=\"background:var(--signal)\"></i>Relative Kraft</span></div>\n      <div class=\"stats\" style=\"margin-top:14px\" id=\"relStats\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Muskelgruppen-Balance</h2>\n      <p class=\"hint\" style=\"margin:0 0 12px\">S\u00e4tze pro Muskelgruppe im Zeitraum.</p>\n      <div id=\"muscleBal\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Wochenvolumen gesamt</h2>\n      <div id=\"c-vol\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Konsistenz</h2>\n      <div class=\"stats\" id=\"consist\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Rekorde im Zeitraum</h2>\n      <ul class=\"list\" id=\"prlog\"></ul>\n    </div>\n  </div>\n\n  <div class=\"ansub\" data-sub=\"ernaehrung\" style=\"display:none\">\n    <div class=\"card\">\n      <h2>Kalorien vs. Ziel</h2>\n      <div class=\"pickchips anperiod\" style=\"margin:8px 0 12px\"></div>\n      <div id=\"c-kcaltarget\"></div>\n      <p class=\"hint\" id=\"kcalCoverage\" style=\"margin:8px 0 0\"></p>\n      <div class=\"aninsight\" id=\"i-kcal\"></div>\n      <div class=\"stats\" style=\"margin-top:14px\" id=\"kcalStats\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Makro-Verteilung</h2>\n      <div id=\"macroSplit\"></div>\n    </div>\n    <div class=\"card\">\n      <h2>Schritte</h2>\n      <div id=\"c-steps\"></div>\n      <div class=\"stats\" style=\"margin-top:14px\" id=\"stepStats\"></div>\n    </div>\n  </div>\n</section>\n\n<!-- ============ DATEN ============ -->\n<section class=\"view\" id=\"v-data\">\n  <div class=\"card\">\n    <div class=\"cardhead\"><h2>\u00dcbersicht</h2><span class=\"cardmeta\" id=\"dataSince\"></span></div>\n    <div class=\"tiles\" id=\"dataTiles\"></div>\n  </div>\n\n  <div class=\"card\">\n    <h2>Sicherung</h2>\n    <p class=\"hint\" style=\"margin:0 0 12px\">Vollst\u00e4ndiges JSON-Backup aller Daten. Regelm\u00e4\u00dfig exportieren \u2014 es liegt sonst nur lokal im Browser.</p>\n    <div class=\"row\">\n      <button id=\"expJson\">Backup exportieren</button>\n      <button class=\"ghost\" id=\"impJsonBtn\">Backup einspielen</button>\n    </div>\n    <input type=\"file\" id=\"impJson\" accept=\".json\" style=\"display:none\">\n    <button class=\"ghost tiny\" id=\"expCsv\" style=\"width:100%;margin-top:10px\">Als CSV exportieren</button>\n    <p class=\"hint\" id=\"backupWarn\" style=\"margin:10px 0 0;display:none\"></p>\n  </div>\n\n  <div class=\"card\">\n    <h2>Import</h2>\n    <div class=\"improw\">\n      <span class=\"impic\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3v10M8 9l4 4 4-4M5 17v3h14v-3\"></path></svg></span>\n      <div class=\"impmain\"><div class=\"impt\">Gewicht / CSV</div><div class=\"imps\">Renpho- oder eigener CSV-Export</div></div>\n      <button class=\"ghost tiny\" data-pick=\"csvFile\">Datei</button>\n    </div>\n    <div class=\"improw\">\n      <span class=\"impic\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 3v8a2 2 0 004 0V3M8 11v10M17 3c-1.5 2-2 4-2 6h4c0-2-.5-4-2-6zM17 9v12\"></path></svg></span>\n      <div class=\"impmain\"><div class=\"impt\">Food-Diary</div><div class=\"imps\">kcal &amp; Protein pro Mahlzeit</div></div>\n      <button class=\"ghost tiny\" data-pick=\"csvFile\">Datei</button>\n    </div>\n    <div class=\"improw\">\n      <span class=\"impic\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 3h9l4 4v14H6zM15 3v4h4M9 12h7M9 16h5\"></path></svg></span>\n      <div class=\"impmain\"><div class=\"impt\">Trainings-Notizen</div><div class=\"imps\">Apple-Notes-HTML mit S\u00e4tzen</div></div>\n      <button class=\"ghost tiny\" data-pick=\"noteFiles\">Datei</button>\n    </div>\n    <input type=\"file\" id=\"csvFile\" accept=\".csv,.xlsx,.xls,text/csv,text/plain\" style=\"display:none\">\n    <input type=\"file\" id=\"noteFiles\" accept=\".html,.htm,text/html\" multiple style=\"display:none\">\n    <div id=\"csvMap\" style=\"display:none;margin-top:12px\">\n      <div class=\"row\" style=\"margin-bottom:8px\">\n        <div><label class=\"f\">Datum</label><select id=\"mapDate\"></select></div>\n        <div><label class=\"f\">Gewicht</label><select id=\"mapW\"></select></div>\n      </div>\n      <div class=\"row\">\n        <div><label class=\"f\">Kalorien</label><select id=\"mapK\"></select></div>\n        <div><label class=\"f\">Protein</label><select id=\"mapP\"></select></div>\n      </div>\n      <button id=\"csvGo\" style=\"width:100%;margin-top:12px\">Importieren</button>\n    </div>\n    <div id=\"csvInfo\" class=\"hint\"></div>\n    <div id=\"notePreview\" style=\"display:none;margin-top:12px\"></div>\n    <button id=\"noteImport\" style=\"width:100%;margin-top:10px;display:none\">Importieren</button>\n  </div>\n\n  <div class=\"card profcard\" id=\"profileCard\">\n    <h2>Profil</h2>\n    <div class=\"profrow\">\n      <span class=\"proflab\">Geschlecht</span>\n      <div class=\"phaseseg\" id=\"sexSeg\" role=\"group\" aria-label=\"Geschlecht\"><button data-sex=\"m\" aria-pressed=\"true\">M\u00e4nnlich</button><button data-sex=\"w\">Weiblich</button></div>\n    </div>\n    <div class=\"profrow\">\n      <span class=\"proflab\">Alter</span>\n      <input type=\"number\" id=\"pAge\" class=\"profnum\" inputmode=\"numeric\" min=\"10\" max=\"100\" step=\"1\" placeholder=\"\u2014\">\n      <span class=\"profunit\">Jahre</span>\n      <span class=\"proflab\" style=\"margin-left:14px\">Gr\u00f6\u00dfe</span>\n      <input type=\"number\" id=\"pHeight\" class=\"profnum\" inputmode=\"numeric\" min=\"120\" max=\"230\" step=\"1\" placeholder=\"\u2014\">\n      <span class=\"profunit\">cm</span>\n    </div>\n    <p class=\"hint\" id=\"profHint\" style=\"margin:8px 0 0\"></p>\n  </div>\n\n\n  <div class=\"card\">\n    <h2>Als App installieren</h2>\n    <p class=\"hint\" style=\"margin:0\">Safari \u00f6ffnen \u2192 Teilen-Symbol \u2192 \u201eZum Home-Bildschirm\". Danach startet das Logbuch im Vollbild mit eigenem Icon und funktioniert offline.</p>\n  </div>\n\n  <div class=\"card\">\n    <h2>Zur\u00fccksetzen</h2>\n    <button class=\"ghost\" id=\"wipe\" style=\"width:100%;color:var(--signal);border-color:var(--signal)\">Alle Daten l\u00f6schen</button>\n  </div>\n</section>\n\n</main>\n\n<nav><div class=\"inner\"><button data-v=\"log\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 8h2v8H4zM18 8h2v8h-2zM6 11h12v2H6z\"></path></svg><span>Training</span></button><button data-v=\"plan\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 4h14v16H5zM8 2v4M16 2v4M5 9h14\"></path></svg><span>Plan</span></button><button data-v=\"body\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 3a2.4 2.4 0 100 4.8A2.4 2.4 0 0012 3zM7 21v-5l-2-1 1-5h4l3 0l1 5-2 1v5\"></path></svg><span>K\u00f6rper</span></button><button data-v=\"an\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-7\"></path></svg><span>Analyse</span></button><button data-v=\"data\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 6c0-1.6 3.1-3 7-3s7 1.4 7 3-3.1 3-7 3-7-1.4-7-3zM5 6v6c0 1.6 3.1 3 7 3s7-1.4 7-3V6M5 12v6c0 1.6 3.1 3 7 3s7-1.4 7-3v-6\"></path></svg><span>Daten</span></button></div></nav>\n\n<div class=\"traintimer\" id=\"trainTimer\" style=\"display:none\"><div class=\"tt-item\"><span class=\"tt-lab\">Einheit</span><span class=\"tt-val\" id=\"ttSession\">00:00</span></div><div class=\"tt-item\"><span class=\"tt-lab\">Pause</span><span class=\"tt-val\" id=\"ttRest\">00:00</span></div><button class=\"link\" id=\"ttStop\">Stopp</button></div>\n\n<div class=\"pickov\" id=\"goalOv\" style=\"display:none\">\n  <div class=\"picksheet\">\n    <div class=\"foodtitle\">Kalorienziel</div>\n    <div class=\"phaserow\">\n      <span class=\"phaselab\">Phase</span>\n      <div class=\"phaseseg\" id=\"phaseSeg\" role=\"group\" aria-label=\"Phase\"><button data-phase=\"maintain\" aria-pressed=\"true\">Maintain</button><button data-phase=\"cut\">Cut</button><button data-phase=\"bulk\">Bulk</button></div>\n    </div>\n    <div id=\"nutriBars\"></div>\n    <div class=\"goalmeta\" id=\"goalMeta\"></div>\n    <button class=\"ghost tiny\" id=\"nutriEdit\" style=\"width:100%;margin-top:10px\">Protein-Ziel \u00e4ndern</button>\n    <button class=\"ghost pickclose\" id=\"goalClose\">Schlie\u00dfen</button>\n  </div>\n</div>\n\n<div class=\"pickov\" id=\"measOv\" style=\"display:none\">\n  <div class=\"picksheet\">\n    <div class=\"foodtitle\" id=\"measTitle\">Umf\u00e4nge</div>\n    <p class=\"hint\" style=\"margin:0 0 12px\">In Zentimetern, leer lassen was du nicht misst. Immer zur gleichen Tageszeit und ohne anzuspannen messen.</p>\n    <div id=\"measForm\"></div>\n    <button id=\"measSave\" style=\"width:100%;margin-top:12px\">Speichern</button>\n    <button class=\"link measClose\" style=\"margin-top:6px;text-align:center;width:100%\">Schlie\u00dfen</button>\n  </div>\n</div>\n\n<div class=\"toast\" id=\"toast\"></div>\n\n";
 const EXTRA_CSS = `
 /* Auf iOS schrumpft bei offener Tastatur nur der visuelle Viewport — position:fixed
    bleibt am Layout-Viewport haengen, das Sheet landet also hinter der Tastatur.
@@ -574,6 +574,16 @@ const Store = {
 const DEFAULT_EX = ['Bankdrücken','Schrägbankdrücken KH','Kniebeuge','Kreuzheben','Rudern vorgebeugt','Latzug','Schulterdrücken KH','Beinpresse','Bizepscurls KH','Trizepsdrücken Kabel'];
 const DEFAULT_MEALS = ['Frühstück','Mittagessen','Abendessen','Snack'];
 const DEFAULT_GOALS = {sessions:3, setsPerMuscle:10, kcalTarget:2200, proteinTarget:150};
+// Umfaenge: Schluessel in db.body[].meas, Reihenfolge = Anzeigereihenfolge.
+const MEAS_SITES = [
+  {k:'waist',  label:'Bauch',    color:'var(--signal)'},
+  {k:'chest',  label:'Brust',    color:'var(--blue)'},
+  {k:'arm',    label:'Oberarm',  color:'var(--teal)'},
+  {k:'thigh',  label:'Oberschenkel', color:'var(--ochre)'},
+  {k:'hip',    label:'Hüfte',    color:'var(--mc)'},
+];
+// Trainingspause: ab hier gilt eine Luecke als Pause und nicht als Rhythmus.
+const PAUSE_MIN_D = 14;
 
 /* Phasen-Modell: Nutzer wählt Phase + Intensität in der App.
    delta = kcal/Tag ggü. dem geschätzten Erhaltungsbedarf. */
@@ -778,6 +788,28 @@ function findDay(id){
 }
 
 /* ---------------- Diagramme ---------------- */
+// Catmull-Rom-Spline als kubische Beziers. Die Kontrollpunkte werden auf den
+// y-Bereich des jeweiligen Segments geklemmt: eine geglaettete Linie darf
+// nirgends ueber den tatsaechlich gemessenen Wert hinausschiessen, sonst zeigt
+// der Graph Gewichte an, die es nie gegeben hat.
+function smoothPath(cs, t){
+  const f = n => n.toFixed(1);
+  if(!cs.length) return '';
+  if(cs.length===1) return 'M'+f(cs[0][0])+','+f(cs[0][1]);
+  if(cs.length===2) return 'M'+f(cs[0][0])+','+f(cs[0][1])+' L'+f(cs[1][0])+','+f(cs[1][1]);
+  t = (t==null) ? 0.5 : t;
+  let d = 'M'+f(cs[0][0])+','+f(cs[0][1]);
+  for(let i=0;i<cs.length-1;i++){
+    const p0=cs[i-1]||cs[i], p1=cs[i], p2=cs[i+1], p3=cs[i+2]||cs[i+1];
+    const lo=Math.min(p1[1],p2[1]), hi=Math.max(p1[1],p2[1]);
+    const c1x=p1[0]+(p2[0]-p0[0])/6*t, c2x=p2[0]-(p3[0]-p1[0])/6*t;
+    let c1y=p1[1]+(p2[1]-p0[1])/6*t, c2y=p2[1]-(p3[1]-p1[1])/6*t;
+    c1y=Math.max(lo,Math.min(hi,c1y)); c2y=Math.max(lo,Math.min(hi,c2y));
+    d += ' C'+f(c1x)+','+f(c1y)+' '+f(c2x)+','+f(c2y)+' '+f(p2[0])+','+f(p2[1]);
+  }
+  return d;
+}
+
 function chart(series, opts={}){
   const W=520, H=opts.h||190, PL=38, PR=opts.pr||8, PT=10, PB=24;
   const all = series.flatMap(s=>s.pts);
@@ -819,7 +851,8 @@ function chart(series, opts={}){
       }
       continue;
     }
-    const d = pts.map((p,i)=>`${i?'L':'M'}${X(p.x).toFixed(1)},${Y(p.y,ax).toFixed(1)}`).join(' ');
+    const co = pts.map(p=>[X(p.x), Y(p.y,ax)]);
+    const d = s.smooth ? smoothPath(co) : co.map((c,i)=>`${i?'L':'M'}${c[0].toFixed(1)},${c[1].toFixed(1)}`).join(' ');
     g += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.w||1.8}" stroke-linejoin="round" stroke-linecap="round" ${s.dash?`stroke-dasharray="3 3"`:''} opacity="${s.op||1}"/>`;
     if(s.dots) for(const p of pts) g += `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y,ax).toFixed(1)}" r="${s.dots}" fill="${s.color}"/>`;
     if(s.prs) for(const p of pts.filter(p=>p.pr)) g += `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y,ax).toFixed(1)}" r="3.4" fill="var(--signal)" stroke="var(--card)" stroke-width="1.5"/>`;
@@ -1478,7 +1511,7 @@ function renderMeals(){
     await Store.save(db); renderAll(); toast('Menge geändert');
   });
 }
-$('#bdate').addEventListener('change', ()=>{ renderMeals(); renderNutri(); });
+$('#bdate').addEventListener('change', ()=>{ renderMeals(); renderNutri(); renderWater(); renderMeas(); renderDayNote(); });
 
 
 /* ---------------- Suche: Normalisierung, Fuzzy-Scoring, lokale Quellen ---------------- */
@@ -2180,7 +2213,8 @@ function weightChart(pts, sel){
   const Y=y=> PT + (1-(y-lo)/spanY)*(H-PT-PB);
   let g='';
   for(let i=0;i<=3;i++){ const val=lo+spanY*i/3; const y=PT+(1-i/3)*(H-PT-PB); g+='<line x1="'+PL+'" y1="'+y.toFixed(1)+'" x2="'+(W-PR)+'" y2="'+y.toFixed(1)+'" stroke="var(--grid)" stroke-width="1"/>'; g+='<text x="'+(W-PR+6)+'" y="'+(y+3.5).toFixed(1)+'" font-family="var(--mono)" font-size="10" fill="var(--ink-30)">'+val.toFixed(1)+'</text>'; }
-  const line=pts.map((p,i)=>(i?'L':'M')+X(p.x).toFixed(1)+','+Y(p.y).toFixed(1)).join(' ');
+  const co=pts.map(p=>[X(p.x), Y(p.y)]);
+  const line=smoothPath(co);
   const area=line+' L'+X(pts[pts.length-1].x).toFixed(1)+','+(H-PB).toFixed(1)+' L'+X(pts[0].x).toFixed(1)+','+(H-PB).toFixed(1)+' Z';
   g+='<path d="'+area+'" fill="var(--blue)" opacity="0.08"/>';
   g+='<path d="'+line+'" fill="none" stroke="var(--blue)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>';
@@ -2402,6 +2436,63 @@ function renderAnalysis(){
     <div class="stat"><div class="k">ø pro Woche</div><div class="v">${round(perWeek,1)}</div><div class="s">Einheiten</div></div>
     <div class="stat"><div class="k">Längste Pause</div><div class="v">${Math.round(maxGap)}</div><div class="s">Tage ohne Training</div></div>
     <div class="stat"><div class="k">Letzte Einheit</div><div class="v">${lastSess!=null?lastSess:'—'}</div><div class="s">Tage her</div></div>` : '<div class="empty">Keine Einheiten im Zeitraum</div>';
+  // Pausen ausweisen statt still in die Durchschnitte einrechnen
+  {
+    const ps=trainingPauses(win.from, win.to);
+    const el=$('#consist');
+    if(el && ps.length){
+      const gesamt=ps.reduce((a,c)=>a+c.days,0);
+      el.insertAdjacentHTML('beforeend',
+        '<div class="aninsight" style="grid-column:1/-1;margin-top:12px">'
+        + '<b>'+ps.length+' '+(ps.length===1?'Pause':'Pausen')+'</b> im Zeitraum, zusammen '+gesamt+' Tage. '
+        + 'Der Wochenschnitt oben rechnet sie mit — ohne die Pausen liegt er höher.<br>'
+        + ps.slice(-3).map(x=>'· '+fmtDate(x.from)+' → '+fmtDate(x.to)+' ('+x.days+' Tage'+(x.laufend?', läuft noch':'')+')').join('<br>')
+        + '</div>');
+    }
+  }
+
+  // ---- Umfänge ----
+  {
+    const rows=measSorted().filter(x=>inWin(x.date));
+    const aktiv=MEAS_SITES.filter(m=>rows.some(r=>r.meas[m.k]!=null));
+    const host=$('#c-meas'), leg=$('#measLegend'), st=$('#measStats');
+    if(host){
+      if(!rows.length){ host.innerHTML='<div class="empty">Noch keine Umfänge im Zeitraum</div>'; if(leg) leg.innerHTML=''; if(st) st.innerHTML=''; }
+      else {
+        host.innerHTML=chart(aktiv.map(m=>({
+          pts: rows.filter(r=>r.meas[m.k]!=null).map(r=>({x:T(r.date), y:r.meas[m.k]})),
+          color:m.color, w:2, smooth:true, dots:2.6
+        })), {h:190});
+        if(leg) leg.innerHTML=aktiv.map(m=>'<span><i style="background:'+m.color+'"></i>'+m.label+'</span>').join('');
+        if(st) st.innerHTML=aktiv.map(m=>{
+          const v=rows.filter(r=>r.meas[m.k]!=null);
+          const a=v[0].meas[m.k], b=v[v.length-1].meas[m.k], dlt=b-a;
+          return '<div class="stat"><div class="k">'+m.label+'</div><div class="v">'+dec1(b)+'</div>'
+               + '<div class="s">'+(v.length>1?((dlt>0?'+':'')+round(dlt,1)+' cm im Zeitraum'):'ein Messpunkt')+'</div></div>';
+        }).join('');
+      }
+    }
+  }
+
+  // ---- Wasser ----
+  {
+    const rows=b.filter(x=>x.water!=null);
+    const host=$('#c-water'), st=$('#waterStats');
+    if(host){
+      if(!rows.length){ host.innerHTML='<div class="empty">Noch keine Wasseraufnahme im Zeitraum</div>'; if(st) st.innerHTML=''; }
+      else {
+        host.innerHTML=chart([
+          {pts:rows.map(x=>({x:T(x.date), y:x.water/1000})), color:'var(--blue)', type:'bar', op:.55},
+          {pts:rows.map(x=>({x:T(x.date), y:waterTarget(x.date)/1000})), color:'var(--ink-30)', w:1.4, dash:true}
+        ], {h:170, zero:true});
+        const avg=rows.reduce((a,c)=>a+c.water,0)/rows.length;
+        const erreicht=rows.filter(x=>x.water>=waterTarget(x.date)).length;
+        if(st) st.innerHTML=
+            '<div class="stat"><div class="k">ø pro Tag</div><div class="v">'+dec1(avg/1000)+'</div><div class="s">Liter</div></div>'
+          + '<div class="stat"><div class="k">Ziel erreicht</div><div class="v">'+erreicht+'</div><div class="s">von '+rows.length+' Tagen</div></div>';
+      }
+    }
+  }
 
   // PR-Log
   const wsorted=[...db.workouts].sort((a,b)=>a.date<b.date?-1:1);
@@ -2520,7 +2611,8 @@ function renderDataStats(){
   const measures=db.body.filter(x=>x.weight!=null).length;
   const entries=db.body.reduce((a,x)=>a+((x.meals&&x.meals.length)||0),0);
   const tile=(v,l)=>'<div><b>'+de(v)+'</b><span>'+l+'</span></div>';
-  host.innerHTML=tile(sessions,'Einheiten')+tile(measures,'Messungen')+tile(db.exercises.length,'Übungen')+tile(entries,'Einträge');
+  const umf=db.body.filter(x=>x.meas && Object.keys(x.meas).length).length;
+  host.innerHTML=tile(sessions,'Einheiten')+tile(measures,'Messungen')+tile(db.exercises.length,'Übungen')+tile(entries,'Einträge')+tile(umf,'Umfänge');
   const dates=[...db.workouts.map(w=>w.date), ...db.body.map(b=>b.date)].filter(Boolean).sort();
   const since=$('#dataSince');
   if(since) since.textContent = dates.length ? 'seit '+dates[0].slice(5,7)+'/'+dates[0].slice(2,4) : '';
@@ -2754,18 +2846,23 @@ $('#expCsv').onclick = ()=>{
   // Enthaelt jetzt auch Fett, Kohlenhydrate, Salz, Ballaststoffe, Schritte und
   // die einzelnen Mahlzeiten — vorher fehlte gut die Haelfte der erfassten Daten.
   const c = v => v==null ? '' : String(v).replace(/;/g,',').replace(/[\r\n]+/g,' ');
-  const a = ['datum;typ;tag;bezeichnung;saetze;volumen_kg;e1rm_kg;gewicht_kg;schritte;kcal;protein_g;fett_g;kh_g;salz_g;ballast_g;menge_g;notiz'];
+  const MS = MEAS_SITES.map(m=>m.k);
+  const a = ['datum;typ;tag;bezeichnung;saetze;volumen_kg;e1rm_kg;gewicht_kg;schritte;kcal;protein_g;fett_g;kh_g;salz_g;ballast_g;menge_g;wasser_ml;'
+           + MS.map(k=>'umfang_'+k+'_cm').join(';') + ';notiz'];
   for(const w of [...db.workouts].sort((x,y)=>x.date<y.date?-1:1)){
     const st = sessionStats(w);
     a.push([w.date,'training',w.day||'',c(w.exercise),w.sets.map(x=>`${x.w}x${x.r}`).join(' '),
-            round(st.vol,0),round(st.best,1),'','','','','','','','','',c(w.note)].join(';'));
+            round(st.vol,0),round(st.best,1),'','','','','','','','','','',
+            ...MS.map(()=>''), c(w.note)].join(';'));
   }
   for(const b of bodySorted()){
     a.push([b.date,'koerper','','','','','',b.weight??'',b.steps??'',b.kcal??'',b.protein??'',
-            b.fat??'',b.carbs??'','','','',''].join(';'));
+            b.fat??'',b.carbs??'','','','',b.water??'',
+            ...MS.map(k=>(b.meas&&b.meas[k]!=null)?b.meas[k]:''), c(b.note)].join(';'));
     for(const m of (b.meals||[])){
       a.push([b.date,'mahlzeit',c(m.name),c(m.pname||m.text),'','','','','',m.kcal??'',m.protein??'',
-              m.fat??'',m.carbs??'',m.salt??'',m.fiber??'',m.g??'',''].join(';'));
+              m.fat??'',m.carbs??'',m.salt??'',m.fiber??'',m.g??'','',
+              ...MS.map(()=>''), ''].join(';'));
     }
   }
   dl(`logbuch-${TODAY}.csv`, a.join('\n'), 'text/csv');
@@ -2833,6 +2930,22 @@ if(_nutriEdit) _nutriEdit.onclick=async()=>{
   }
   await Store.save(db); renderAll(); toast('Protein-Ziel: '+proteinTargetG()+' g');
 };
+{ const _dn=$('#dayNote');
+  if(_dn) _dn.addEventListener('change', async()=>{
+    const d=$('#bdate').value||TODAY;
+    const v=_dn.value.trim();
+    if(v){ dayEntry(d,true).note=v; }
+    else { const e=dayEntry(d); if(e) delete e.note; }
+    await Store.save(db); renderDayNote();
+    toast(v?'Notiz gespeichert':'Notiz gelöscht');
+  });
+}
+{ const _mo=$('#measOv');
+  if(_mo){
+    _mo.querySelector('.measClose').onclick=()=>{ _mo.style.display='none'; };
+    _mo.addEventListener('click', e=>{ if(e.target===_mo) _mo.style.display='none'; });
+  }
+}
 const _blistMore=$('#blistMore'); if(_blistMore) _blistMore.onclick=()=>{ blistLimit = blistLimit>=10 ? 5 : 10; renderBody(); };
 
 function calData(){
@@ -3167,6 +3280,7 @@ function renderAll(){
   fillAnEx();
   renderWList(); renderPlan(); renderBody(); renderAnalysis(); renderExList(); renderCal();
   renderMeals(); renderNutri(); renderGoals(); renderDataStats(); updateUnitPill();
+  renderWater(); renderMeas(); renderDayNote();
 }
 
 /* ---------------- PWA & Tagesziele ---------------- */
@@ -3211,6 +3325,145 @@ function migrateHeat(){
   }catch(e){ return 0; }
 }
 function saltTarget(d,heat){ let vol=0,tr=false; for(const w of db.workouts){ if(w.date===d){ tr=true; vol+=sessionStats(w).vol; } } let t=(db.sex==='w')?4.5:5; if(tr) t+=1.5+Math.min(2,vol/8000); t+=(heat||0)*1.25; return Math.round(t*2)/2; }
+/* ---------------- Wasser ---------------- */
+// Grundbedarf ~35 ml je kg, plus Zuschlag fuers Training (Schweissverlust
+// steigt mit dem Volumen) und fuer Hitze — dieselbe Logik wie beim Salzziel,
+// damit beide Ziele nicht auseinanderlaufen.
+function waterTarget(d){
+  const w = latestWeight() || 75;
+  let ml = w*35;
+  let vol=0, tr=false;
+  for(const x of db.workouts) if(x.date===d){ tr=true; vol+=sessionStats(x).vol; }
+  if(tr) ml += 500 + Math.min(700, vol/12);
+  ml += (_getHeat(d)||0)*400;
+  return Math.round(ml/50)*50;
+}
+function dayEntry(d, create){
+  let e = db.body.find(x=>x.date===d);
+  if(!e && create){ e={date:d}; db.body.push(e); }
+  return e;
+}
+async function addWater(ml){
+  const d=$('#bdate').value||TODAY;
+  const e=dayEntry(d,true);
+  e.water = Math.max(0, Math.round((e.water||0)+ml));
+  if(!e.water) delete e.water;
+  await Store.save(db);
+  renderWater(); renderDataStats();
+}
+function renderWater(){
+  const host=$('#waterCard'); if(!host) return;
+  const d=$('#bdate').value||TODAY;
+  const e=dayEntry(d)||{};
+  const ml=e.water||0, t=waterTarget(d);
+  const pct=t>0?Math.min(100,Math.round(ml/t*100)):0;
+  const rest=Math.max(0,t-ml);
+  host.innerHTML =
+    '<div class="meals-head" style="margin-bottom:10px"><span class="t">Wasser</span>'
+    + '<span class="k">'+dec1(ml/1000)+' / '+dec1(t/1000)+' l</span></div>'
+    + '<div class="goal-bar"><i class="'+(ml>=t?'done':'')+'" style="width:'+pct+'%;background:var(--blue)"></i></div>'
+    + '<div class="goal-sub" style="margin-top:6px">'+(ml>=t?'Ziel erreicht':'Noch '+de(rest)+' ml')+'</div>'
+    + '<div class="pickchips" style="margin-top:12px">'
+    +   [250,500,750].map(v=>'<button class="chip" data-w="'+v+'">+'+v+' ml</button>').join('')
+    +   '<button class="chip" data-w="-250">−250</button>'
+    +   '<button class="chip" data-w="0">zurücksetzen</button>'
+    + '</div>';
+  host.querySelectorAll('[data-w]').forEach(b=>b.onclick=async()=>{
+    const v=+b.dataset.w;
+    if(v===0){ const en=dayEntry(d); if(en) delete en.water; await Store.save(db); renderWater(); return; }
+    addWater(v);
+  });
+}
+
+/* ---------------- Umfänge ---------------- */
+function measSorted(){
+  return bodySorted().filter(x=>x.meas && MEAS_SITES.some(m=>x.meas[m.k]!=null));
+}
+function renderMeas(){
+  const host=$('#measCard'); if(!host) return;
+  const rows=measSorted();
+  const last=rows[rows.length-1];
+  const prev=rows.length>1?rows[rows.length-2]:null;
+  let body;
+  if(!last){
+    body='<div class="mi-empty">Noch nichts gemessen. Bauchumfang allein reicht schon — im Cut sagt er mehr als die Waage.</div>';
+  } else {
+    body='<div class="stats">'+MEAS_SITES.filter(m=>last.meas[m.k]!=null).map(m=>{
+      const v=last.meas[m.k];
+      const p=prev && prev.meas && prev.meas[m.k]!=null ? prev.meas[m.k] : null;
+      const dlt=p!=null ? (v-p) : null;
+      const sub=dlt==null ? fmtDate(last.date)
+        : (dlt>0?'+':'')+round(dlt,1)+' cm seit '+fmtDate(prev.date);
+      return '<div class="stat"><div class="k">'+m.label+'</div><div class="v">'+dec1(v)+'</div><div class="s">'+sub+'</div></div>';
+    }).join('')+'</div>';
+  }
+  host.innerHTML='<div class="meals-head" style="margin-bottom:10px"><span class="t">Umfänge</span>'
+    + '<button class="link" id="measEdit">'+(last?'eintragen':'jetzt messen')+'</button></div>'+body;
+  const b=host.querySelector('#measEdit'); if(b) b.onclick=openMeas;
+}
+function openMeas(){
+  const ov=$('#measOv'); if(!ov) return;
+  const d=$('#bdate').value||TODAY;
+  const e=dayEntry(d)||{};
+  const cur=e.meas||{};
+  // Als Vorbelegung die zuletzt gemessenen Werte anbieten — man misst selten alles neu.
+  const rows=measSorted(); const lastM=(rows[rows.length-1]||{}).meas||{};
+  $('#measTitle').textContent='Umfänge · '+fmtDate(d);
+  $('#measForm').innerHTML=MEAS_SITES.map(m=>
+    '<div class="profrow"><span class="proflab" style="flex:1">'+m.label+'</span>'
+    + '<input type="text" inputmode="decimal" class="profnum meas-in" data-k="'+m.k+'" '
+    + 'value="'+(cur[m.k]!=null?String(cur[m.k]).replace('.',','):'')+'" '
+    + 'placeholder="'+(lastM[m.k]!=null?String(lastM[m.k]).replace('.',','):'—')+'">'
+    + '<span class="profunit">cm</span></div>').join('');
+  ov.style.display='flex';
+  $('#measSave').onclick=async()=>{
+    const en=dayEntry(d,true);
+    const meas={};
+    ov.querySelectorAll('.meas-in').forEach(i=>{
+      const v=num(i.value);
+      if(v!=null && v>0 && v<300) meas[i.dataset.k]=Math.round(v*10)/10;
+    });
+    if(Object.keys(meas).length) en.meas=meas; else delete en.meas;
+    await Store.save(db);
+    ov.style.display='none';
+    renderMeas(); renderAnalysis(); renderDataStats();
+    toast(Object.keys(meas).length?'Umfänge gespeichert':'Umfänge gelöscht');
+  };
+}
+
+/* ---------------- Tagesnotiz ---------------- */
+function renderDayNote(){
+  const ta=$('#dayNote'); if(!ta) return;
+  const d=$('#bdate').value||TODAY;
+  const e=dayEntry(d)||{};
+  ta.value=e.note||'';
+  const meta=$('#noteMeta');
+  if(meta){
+    const n=db.body.filter(x=>x.note).length;
+    meta.textContent = n ? n+' Notizen' : '';
+  }
+}
+
+/* ---------------- Trainingspausen ---------------- */
+// Laengere Luecken sind fuer jede Statistik relevant: sie ziehen Durchschnitte
+// und Steigungen still nach unten. Deshalb werden sie erkannt und ausgewiesen,
+// statt sie als Rhythmus mitzurechnen.
+function trainingPauses(fromDate, toDate){
+  const T=s=>new Date(s+'T12:00:00').getTime();
+  const days=[...new Set(db.workouts.map(w=>w.date))].sort();
+  const out=[];
+  for(let i=1;i<days.length;i++){
+    const gap=Math.round((T(days[i])-T(days[i-1]))/864e5);
+    if(gap>=PAUSE_MIN_D) out.push({from:days[i-1], to:days[i], days:gap});
+  }
+  const heute=Math.round((T(TODAY)-T(days[days.length-1]||TODAY))/864e5);
+  if(days.length && heute>=PAUSE_MIN_D) out.push({from:days[days.length-1], to:TODAY, days:heute, laufend:true});
+  if(fromDate!=null||toDate!=null){
+    return out.filter(p=>(fromDate==null||T(p.to)>=fromDate) && (toDate==null||T(p.from)<=toDate));
+  }
+  return out;
+}
+
 /* ---------------- Theme: Auto / Hell / Dunkel ---------------- */
 const THEMES = [
   {id:'auto',  icon:'◐', label:'Automatisch (folgt dem System)'},
