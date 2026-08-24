@@ -1299,6 +1299,11 @@ $('#addBlock').onclick = async ()=>{
 
 let editingSession = null;
 let editingDayName = null;
+// Wird gesetzt, sobald das Overlay des aktiven Trainings existiert. Alles, was
+// weiter oben im Code laeuft, aber auf trainOv zugreift, muss darauf warten —
+// sonst gibt es beim Start einen ReferenceError, weil const erst spaeter
+// initialisiert wird (Temporal Dead Zone).
+let atReady = false;
 let trainState = (()=>{ try{ return JSON.parse(localStorage.getItem('logbuch.train'))||{startAt:null,lastSetAt:null}; }catch(e){ return {startAt:null,lastSetAt:null}; } })();
 function saveTrainState(){ try{ localStorage.setItem('logbuch.train', JSON.stringify(trainState)); }catch(e){} }
 function fmtDur(ms){ const s=Math.max(0,Math.floor(ms/1000)), m=Math.floor(s/60), h=Math.floor(m/60); return h>0 ? h+':'+String(m%60).padStart(2,'0')+':'+String(s%60).padStart(2,'0') : String(m).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
@@ -1311,7 +1316,8 @@ function updateTimer(){
   if(!trainState.startAt) return;
   const now = Date.now();
   if(now - trainState.startAt > 144e5){ endSession(); return; }
-  const el = trainOv && trainOv.querySelector('.atdur');
+  if(!atReady) return;
+  const el = trainOv.querySelector('.atdur');
   if(el) el.textContent = fmtDur(now - trainState.startAt);
 }
 { $$('.js-start').forEach(b=>b.onclick=startTraining);
@@ -1333,7 +1339,6 @@ function updateTimer(){
     });
   }
 }
-setInterval(updateTimer, 1000); updateTimer();
 /* Beim Tippen schiebt die Tastatur den Speichern-Knopf nach oben, teils genau
    unter den Daumen. Deshalb ist er blockiert, solange ein Satzfeld den Fokus
    hat — und noch kurz danach, weil der Finger beim Schliessen der Tastatur
@@ -2812,6 +2817,10 @@ trainOv.querySelector('.atrest-skip').onclick = stopRest;
 trainOv.querySelector('.atrest-plus').onclick = ()=>{ if(restEndAt){ restEndAt += 30000; beepDone=false; tickRest(); } };
 trainOv.querySelector('.atrest-minus').onclick = ()=>{ if(restEndAt){ restEndAt -= 30000; tickRest(); } };
 
+// Ab hier existiert trainOv — erst jetzt duerfen Timer und Leiste darauf zugreifen.
+atReady = true;
+setInterval(updateTimer, 1000); updateTimer();
+
 function startRest(ex){
   beepArm();
   restEndAt = Date.now() + restTargetFor(ex)*1000;
@@ -2885,6 +2894,7 @@ function sessionOpen(){
   return atAllRows().length > 0 && (atDoneCount() > 0 || unsavedSets() > 0);
 }
 function renderResumeBar(){
+  if(!atReady) return;
   const bar=$('#resumeBar'); if(!bar) return;
   const imTraining = $('#v-log') && $('#v-log').classList.contains('on');
   const overlayOffen = trainOv && trainOv.style.display !== 'none';
